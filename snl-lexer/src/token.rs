@@ -1,0 +1,51 @@
+#[repr(C)]
+pub struct Token {
+    pub token_type: TokenType,
+    pub value: String,
+    pub line: u32,
+    pub column: u32,
+}
+
+#[repr(u8)]
+pub enum TokenType {
+    Identifer,
+    Int,
+
+    Program,
+    Type,
+    Array,
+    Integer,
+    Char,
+    Record,
+    Of,
+    Var,
+    Procedure,
+    Begin,
+    End,
+    If,
+    Then,
+    Else,
+    Fi,
+    While,
+    Do,
+    Endwh,
+    Read,
+    Write,
+    Return,
+
+    Add,
+    Minus,
+    Multiply,
+    Divide,
+    Equal,
+    AssignEqual,
+    Comma,
+    Semicolon,
+    LessThan,
+    BracketOpen,
+    BracketClose,
+    SquareBracketOpen,
+    SquareBracketClose,
+    Dot,
+    DotDot,
+}

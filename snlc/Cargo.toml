@@ -1,0 +1,7 @@
+[package]
+name = "snlc"
+version = "0.1.0"
+authors = ["Yesterday17 <t@yesterday17.cn>"]
+edition = "2018"
+
+[dependencies]

@@ -1,0 +1,119 @@
+digit                ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+letter               ::= "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j"
+                       | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t"
+                       | "u" | "v" | "w" | "x" | "y" | "z";
+
+IDENTIFIER           ::= letter ( letter | digit )*;
+INTC                 ::= letter+;
+
+PROGRAM              ::= "program";
+TYPE                 ::= "type";
+ARRAY                ::= "array";
+INTEGER              ::= "integer";
+CHAR                 ::= "char";
+RECORD               ::= "record";
+OF                   ::= "of";
+VAR                  ::= "var";
+PROCEDURE            ::= "procedure";
+BEGIN                ::= "begin";
+END                  ::= "end";
+IF                   ::= "if";
+THEN                 ::= "then";
+ELSE                 ::= "else";
+FI                   ::= "fi";
+WHILE                ::= "while";
+DO                   ::= "do";
+ENDWH                ::= "endwh";
+READ                 ::= "read";
+WRITE                ::= "write";
+RETURN               ::= "return";
+
+ADD                  ::= "+";
+MINUS                ::= "-";
+MUL                  ::= "*";
+DIV                  ::= "/";
+EQ                   ::= "=";
+ASSIGN               ::= ":=";
+COMMA                ::= ",";
+SEMICOLON            ::= ";";
+LT                   ::= "<";
+SQBR_OPEN            ::= "[";
+SQBR_CLOSE           ::= "]";
+BR_OPEN              ::= "(";
+BR_CLOSE             ::= ")";
+DOT                  ::= ".";
+DOT2                 ::= "..";
+
+###########################################
+
+Program              ::= ProgramHead DeclarePart ProgramBody;
+
+###########################################
+
+ProgramHead          ::= PROGRAM ProgramName;
+ProgramName          ::= IDENTIFIER;
+
+###########################################
+
+DeclarePart          ::= TypeDec VarDec ProcDec;
+
+TypeDec              ::= TypeDeclaration | ;
+TypeDeclaration      ::= TYPE TypeDecList;
+TypeDecList          ::= ( TypeId EQ TypeName SEMICOLON )+;
+TypeId               ::= IDENTIFIER;
+TypeName             ::= BaseType | StructureType | IDENTIFIER;
+BaseType             ::= INTEGER | CHAR;
+StructureType        ::= ArrayType | RecType;
+ArrayType            ::= ARRAY SQBR_OPEN Low DOT2 Top SQBR_CLOSE OF BaseType;
+Low                  ::= INTC;
+Top                  ::= INTC;
+RecType              ::= RECORD FieldDecList END;
+FieldDecList         ::= ( FieldDecType IdentifierList SEMICOLON )+;
+FieldDecType         ::= BaseType | ArrayType;
+IdentifierList       ::= IDENTIFIER ( COMMA IDENTIFIER )*;
+
+VarDec               ::= VarDeclaration | ;
+VarDeclaration       ::= VAR VarDecList;
+VarDecList           ::= ( TypeName IdentifierList SEMICOLON )+;
+
+ProcDec              ::= ProcDeclaration | ;
+ProcDeclaration      ::= ( PROCEDURE ProcName BR_OPEN ParamList BR_CLOSE SEMICOLON ProcDecPart ProcBody )+;
+ProcName             ::= IDENTIFIER;
+ParamList            ::= Param ( SEMICOLON Param )*;
+Param                ::= VAR? TypeName IdentifierList;
+ProcDecPart          ::= DeclarePart;
+ProcBody             ::= ProgramBody;
+
+###########################################
+
+ProgramBody          ::= BEGIN StatementList END;
+StatementList        ::= ( Statement SEMICOLON )+
+Statement            ::= ConditionalStatement
+                        | LoopStatement
+                        | InputStatement
+                        | OutputStatement
+                        | ReturnStatement
+                        | IDENTIFIER AssCall;
+AssCall              ::= AssignmentRest | CallStatementRest;
+AssignmentRest       ::= VariMore ASSIGN Exp;
+ConditionalStatement ::= IF RelExp THEN StmList ELSE StmList FI;
+LoopStatement        ::= WHILE RelExp DO StmList ENDWH;
+InputStatement       ::= READ BR_OPEN IDENTIFIER BR_CLOSE;
+OutputStatement      ::= WRITE BR_OPEN Exp BR_CLOSE;
+ReturnStatement      ::= RETURN BR_OPEN Exp BR_CLOSE;
+CallStatementRest    ::= BR_OPEN ( Exp ( COMMA Exp )* )? BR_CLOSE;
+RelExp               ::= Exp OtherRelE;
+OtherRelE            ::= CmdOp Exp;
+Exp                  ::= Term ( AddOp Exp )?;
+Term                 ::= Factor ( MultOp Term )?;
+Factor               ::= BR_OPEN Exp BR_CLOSE
+                       | INTC
+                       | Variable;
+Variable             ::= IDENTIFIER VariMore;
+VariMore             ::= SQBR_OPEN Exp SQBR_CLOSE
+                       | DOT FieldVar
+                       |;
+FieldDecList         ::= IDENTIFIER ( SQBR_OPEN Exp SQBR_CLOSE )?;
+CmdOp                ::= LT | EQ;
+AddOp                ::= ADD | MINUS;
+MultOp               ::= MUL | DIV;
