@@ -5,3 +5,5 @@ authors = ["Yesterday17 <t@yesterday17.cn>"]
 edition = "2018"
 
 [dependencies]
+clap = "2.33.3"
+snl-lexer = { path = "../snl-lexer" }
