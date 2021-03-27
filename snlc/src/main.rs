@@ -3,6 +3,29 @@ use std::io::Read;
 
 fn main() {
     let matches = App::new("SNL Compiler")
+        .arg(Arg::with_name("mode")
+            .long("mode")
+            .required(true)
+            .takes_value(true)
+            .possible_values(&["lex", "parse", "semantic"])
+            .default_value("lex")
+        )
+        .arg(Arg::with_name("lexer")
+            .long("lexer")
+            .short("l")
+            .required(true)
+            .takes_value(true)
+            .possible_values(&["rs", "c"])
+            .default_value("rs")
+        )
+        .arg(Arg::with_name("parser")
+            .long("parser")
+            .short("p")
+            .required(false)
+            .takes_value(true)
+            // Recursive descent parser or LL(1) parser
+            .possible_values(&["rdp-rs", "ll1-rs", "rdp-c", "ll1-c"])
+        )
         .arg(Arg::with_name("filename")
             .required(true)
             .takes_value(true)
@@ -11,17 +34,31 @@ fn main() {
         )
         .get_matches();
 
-    let file = matches.value_of("filename").expect("Filename not provided");
+    let mode = matches.value_of("mode").unwrap();
+    let file = matches.value_of("filename").unwrap();
     let input = if file == "-" {
-        unimplemented!()
+        let mut data = String::new();
+        std::io::stdin().read_to_string(&mut data).expect("Failed to read string from stdin");
+        data
     } else {
         let mut file = std::fs::File::open(file).expect("Failed to open file");
         let mut data = String::new();
         file.read_to_string(&mut data).expect("Failed to read file");
         data
     };
-    let lex_result = snl_lexer::read_tokens(&input).unwrap();
-    for token in lex_result {
-        println!("{}", token);
+
+    let lex_result = match matches.value_of("lexer").unwrap() {
+        "rs" => {
+            snl_lexer::read_tokens(&input).unwrap()
+        }
+        "c" => {
+            unimplemented!()
+        }
+        &_ => unreachable!(),
+    };
+    if mode == "lex" {
+        for token in lex_result {
+            println!("{}", token);
+        }
     }
 }
