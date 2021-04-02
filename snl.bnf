@@ -87,7 +87,7 @@ ProcBody             ::= ProgramBody;
 ###########################################
 
 ProgramBody          ::= BEGIN StatementList END;
-StatementList        ::= ( Statement SEMICOLON )+
+StatementList        ::= Statement ( SEMICOLON Statement )*
 Statement            ::= ConditionalStatement
                         | LoopStatement
                         | InputStatement

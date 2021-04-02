@@ -232,13 +232,12 @@ impl Parser {
 
     fn parse_statement_list(&self) -> Result<StatementList, String> {
         let mut statements = Vec::new();
-        loop {
-            if let Some(statement) = self.parse_statement()? {
-                statements.push(statement);
-                self.inner.take(TokenType::Semicolon)?;
-            } else {
-                break;
-            }
+        let statement = self.parse_statement()?.ok_or(format!("empty statement list"))?;
+        statements.push(statement);
+        while TokenType::Semicolon == self.inner.current() {
+            let pos = self.inner.take(TokenType::Semicolon)?;
+            let statement = self.parse_statement()?.ok_or(format!("statement expected near line {}, column {}", pos.line, pos.column))?;
+            statements.push(statement);
         }
         Ok(statements)
     }

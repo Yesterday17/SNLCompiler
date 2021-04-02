@@ -6,7 +6,7 @@ procedure q(integer i);
 var integer a;
 begin
   a := i;
-  write(a);
+  write(a)
 end
 
 begin
@@ -16,5 +16,5 @@ begin
   else
     v1 := v1 - 10
   fi;
-  q(v1);
+  q(v1)
 end.
