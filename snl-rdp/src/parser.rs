@@ -269,7 +269,11 @@ impl Parser {
     }
 
     fn parse_return_statement(&self) -> Result<Statement, String> {
-        unimplemented!()
+        self.inner.take(TokenType::Return)?;
+        self.inner.take(TokenType::BracketOpen)?;
+        let exp = self.parse_expression()?;
+        self.inner.take(TokenType::BracketClose)?;
+        Ok(Statement::Return(exp))
     }
 
     fn parse_call_statement(&self) -> Result<Statement, String> {

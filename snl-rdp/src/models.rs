@@ -46,7 +46,7 @@ pub enum Statement {
     Loop(),
     Input(String),
     Output(Expression),
-    Return(),
+    Return(Expression),
     Assign(AssignStatement),
     Call(),
 }
