@@ -3,13 +3,13 @@ use std::ops::Deref;
 use snl_lexer::token::Token;
 
 #[derive(Debug, Serialize)]
-pub struct ASTNode<T> {
+pub struct Positional<T> {
     pub line: u32,
     pub column: u32,
     inner: T,
 }
 
-impl<T> ASTNode<T> {
+impl<T> Positional<T> {
     pub fn new(line: u32, column: u32, inner: T) -> Self {
         Self {
             line,
@@ -19,11 +19,11 @@ impl<T> ASTNode<T> {
     }
 
     pub fn from_position((line, column): (u32, u32), inner: T) -> Self {
-        ASTNode::new(line, column, inner)
+        Positional::new(line, column, inner)
     }
 
     pub fn from_token(token: &Token, inner: T) -> Self {
-        ASTNode::new(token.line, token.column, inner)
+        Positional::new(token.line, token.column, inner)
     }
 
     pub fn into_inner(self) -> T {
@@ -35,7 +35,7 @@ impl<T> ASTNode<T> {
     }
 }
 
-impl<T> Deref for ASTNode<T> {
+impl<T> Deref for Positional<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -43,7 +43,7 @@ impl<T> Deref for ASTNode<T> {
     }
 }
 
-pub type ASTNodeVec<T> = Vec<ASTNode<T>>;
+pub type PositionalVec<T> = Vec<Positional<T>>;
 
 #[derive(Debug, Serialize)]
 pub struct Program {
@@ -54,15 +54,22 @@ pub struct Program {
 
 #[derive(Debug, Serialize)]
 pub struct ProgramDeclare {
-    pub type_declare: ASTNodeVec<TypeDeclare>,
-    pub variable_declare: ASTNodeVec<VariableDeclare>,
-    pub procedure_declare: ASTNodeVec<ProcedureDeclare>,
+    pub type_declare: PositionalVec<TypeDeclare>,
+    pub variable_declare: PositionalVec<VariableDeclare>,
+    pub procedure_declare: PositionalVec<ProcedureDeclare>,
 }
 
 #[derive(Debug, Serialize)]
 pub struct TypeDeclare {
-    pub base: ASTNode<SNLType>,
-    pub name: String,
+    pub base: Positional<SNLType>,
+    pub(crate) name: String,
+}
+
+impl TypeDeclare {
+    #[inline]
+    pub fn name(&self) -> &str {
+        self.name.as_str()
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -74,7 +81,7 @@ pub struct VariableDeclare {
 #[derive(Debug, Serialize)]
 pub struct ProcedureDeclare {
     pub name: String,
-    pub params: ASTNodeVec<Param>,
+    pub params: PositionalVec<Param>,
     pub declare: Box<ProgramDeclare>,
     pub body: StatementList,
 }

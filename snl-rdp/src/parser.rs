@@ -14,25 +14,25 @@ impl Parser {
         }
     }
 
-    pub fn parse(&self) -> Result<ASTNode<Program>, String> {
+    pub fn parse(&self) -> Result<Positional<Program>, String> {
         self.parse_program()
     }
 
-    fn parse_program(&self) -> Result<ASTNode<Program>, String> {
+    fn parse_program(&self) -> Result<Positional<Program>, String> {
         let name = self.parse_program_head()?;
         let declare = self.parse_declare_part()?;
         let body = self.parse_program_body()?;
-        Ok(ASTNode::from_position(name.position(), Program {
+        Ok(Positional::from_position(name.position(), Program {
             name: name.into_inner(),
             declare,
             body,
         }))
     }
 
-    fn parse_program_head(&self) -> Result<ASTNode<String>, String> {
+    fn parse_program_head(&self) -> Result<Positional<String>, String> {
         let program = self.inner.take(TokenType::Program)?;
         let program_name = self.inner.take(TokenType::Identifer)?.image.clone();
-        Ok(ASTNode::from_token(program, program_name))
+        Ok(Positional::from_token(program, program_name))
     }
 
     fn parse_declare_part(&self) -> Result<ProgramDeclare, String> {
@@ -61,7 +61,7 @@ impl Parser {
         })
     }
 
-    fn parse_declare_type(&self) -> Result<Vec<ASTNode<TypeDeclare>>, String> {
+    fn parse_declare_type(&self) -> Result<Vec<Positional<TypeDeclare>>, String> {
         let mut declare = Vec::new();
         self.inner.take(TokenType::Type)?;
         loop {
@@ -69,7 +69,7 @@ impl Parser {
             self.inner.take(TokenType::Equal)?;
             let inner_type = self.parse_type_name(true)?;
             self.inner.take(TokenType::Semicolon)?;
-            declare.push(ASTNode::from_token(name, TypeDeclare {
+            declare.push(Positional::from_token(name, TypeDeclare {
                 base: inner_type,
                 name: name.image.clone(),
             }));
@@ -80,14 +80,14 @@ impl Parser {
         Ok(declare)
     }
 
-    fn parse_declare_var(&self) -> Result<ASTNodeVec<VariableDeclare>, String> {
-        let mut result = ASTNodeVec::new();
+    fn parse_declare_var(&self) -> Result<PositionalVec<VariableDeclare>, String> {
+        let mut result = PositionalVec::new();
         self.inner.take(TokenType::Var)?;
         loop {
             let type_name = self.parse_type_name(true)?;
             let ids = self.parse_identifier_list()?;
             self.inner.take(TokenType::Semicolon)?;
-            result.push(ASTNode::from_position(
+            result.push(Positional::from_position(
                 type_name.position(),
                 VariableDeclare {
                     base: type_name.into_inner(),
@@ -102,8 +102,8 @@ impl Parser {
         Ok(result)
     }
 
-    fn parse_declare_procedure(&self) -> Result<ASTNodeVec<ProcedureDeclare>, String> {
-        let mut result = ASTNodeVec::new();
+    fn parse_declare_procedure(&self) -> Result<PositionalVec<ProcedureDeclare>, String> {
+        let mut result = PositionalVec::new();
         loop {
             self.inner.take(TokenType::Procedure)?;
             let name = self.inner.take(TokenType::Identifer)?;
@@ -113,7 +113,7 @@ impl Parser {
             self.inner.take(TokenType::Semicolon)?;
             let declare = self.parse_declare_part()?;
             let body = self.parse_program_body()?;
-            result.push(ASTNode::from_token(name, ProcedureDeclare {
+            result.push(Positional::from_token(name, ProcedureDeclare {
                 name: name.image.clone(),
                 params,
                 declare: Box::new(declare),
@@ -126,32 +126,32 @@ impl Parser {
         Ok(result)
     }
 
-    fn parse_type_name(&self, full: bool) -> Result<ASTNode<SNLType>, String> {
+    fn parse_type_name(&self, full: bool) -> Result<Positional<SNLType>, String> {
         let next = self.inner.current();
         let next_pos = (self.inner.current_token().line, self.inner.current_token().column);
         match next {
             TokenType::Integer => {
                 self.inner.move_next();
-                return Ok(ASTNode::from_position(next_pos, SNLType::Integer));
+                return Ok(Positional::from_position(next_pos, SNLType::Integer));
             }
             TokenType::Char => {
                 self.inner.move_next();
-                return Ok(ASTNode::from_position(next_pos, SNLType::Char));
+                return Ok(Positional::from_position(next_pos, SNLType::Char));
             }
             TokenType::Array => {
-                return Ok(ASTNode::from_position(next_pos, SNLType::Array(self.parse_array_type()?)));
+                return Ok(Positional::from_position(next_pos, SNLType::Array(self.parse_array_type()?)));
             }
             _ => {}
         }
         if full {
             match next {
                 TokenType::Record => {
-                    return Ok(ASTNode::from_position(next_pos, SNLType::Record(self.parse_record_type()?)));
+                    return Ok(Positional::from_position(next_pos, SNLType::Record(self.parse_record_type()?)));
                 }
                 TokenType::Identifer => {
                     let name = self.inner.current_token().image.clone();
                     self.inner.move_next();
-                    return Ok(ASTNode::from_position(next_pos, SNLType::Others(name)));
+                    return Ok(Positional::from_position(next_pos, SNLType::Others(name)));
                 }
                 _ => {}
             }
@@ -426,8 +426,8 @@ impl Parser {
         Ok(inner)
     }
 
-    fn parse_param_list(&self) -> Result<ASTNodeVec<Param>, String> {
-        let mut result = ASTNodeVec::new();
+    fn parse_param_list(&self) -> Result<PositionalVec<Param>, String> {
+        let mut result = PositionalVec::new();
         loop {
             if TokenType::BracketClose == self.inner.current() {
                 break;
@@ -441,7 +441,7 @@ impl Parser {
         Ok(result)
     }
 
-    fn parse_param(&self) -> Result<ASTNode<Param>, String> {
+    fn parse_param(&self) -> Result<Positional<Param>, String> {
         let is_var = TokenType::Var == self.inner.current();
         if is_var {
             self.inner.move_next();
@@ -449,7 +449,7 @@ impl Parser {
 
         let type_name = self.parse_type_name(true)?;
         let identifiers = self.parse_identifier_list()?;
-        Ok(ASTNode::from_position(type_name.position(), Param {
+        Ok(Positional::from_position(type_name.position(), Param {
             is_var,
             type_name: type_name.into_inner(),
             identifiers,
