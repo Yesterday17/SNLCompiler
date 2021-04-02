@@ -235,7 +235,7 @@ impl Parser {
 
     fn parse_conditional_statement(&self) -> Result<Statement, String> {
         self.inner.take(TokenType::If)?;
-        let condition = self.parse_relexp()?;
+        let condition = self.parse_relation_expression()?;
         self.inner.take(TokenType::Then)?;
         let body = self.parse_statement_list()?;
         self.inner.take(TokenType::Else)?;
@@ -249,7 +249,12 @@ impl Parser {
     }
 
     fn parse_loop_statement(&self) -> Result<Statement, String> {
-        unimplemented!()
+        self.inner.take(TokenType::While)?;
+        let condition = self.parse_relation_expression()?;
+        self.inner.take(TokenType::Do)?;
+        let body = self.parse_statement_list()?;
+        self.inner.take(TokenType::EndWhile)?;
+        Ok(Statement::Loop(LoopStatement { condition, body }))
     }
 
     fn parse_input_statement(&self) -> Result<Statement, String> {
@@ -288,11 +293,25 @@ impl Parser {
         Ok(Statement::Assign(AssignStatement { name, value }))
     }
 
-    fn parse_relexp(&self) -> Result<(), String> {
-        self.parse_expression()?;
-        // TODO: CmdOp
-        self.parse_expression()?;
-        Ok(())
+    fn parse_relation_expression(&self) -> Result<RelationExpression, String> {
+        let left = self.parse_expression()?;
+        let op = match self.inner.current() {
+            TokenType::LessThan | TokenType::Equal => {
+                let op = self.inner.current_token().image.clone();
+                self.inner.move_next();
+                op
+            }
+            t => {
+                let token = self.inner.current_token();
+                return Err(format!("unexpected token {:?} at line {}, column {}", t, token.line, token.column));
+            }
+        };
+        let right = self.parse_expression()?;
+        Ok(RelationExpression {
+            left,
+            op,
+            right,
+        })
     }
 
     // FIXME: type

@@ -43,7 +43,7 @@ pub type StatementList = Vec<Statement>;
 
 pub enum Statement {
     Conditional(ConditionalStatement),
-    Loop(),
+    Loop(LoopStatement),
     Input(String),
     Output(Expression),
     Return(Expression),
@@ -52,9 +52,14 @@ pub enum Statement {
 }
 
 pub struct ConditionalStatement {
-    pub(crate) condition: (),
+    pub(crate) condition: RelationExpression,
     pub(crate) body: StatementList,
     pub(crate) else_body: StatementList,
+}
+
+pub struct LoopStatement {
+    pub(crate) condition: RelationExpression,
+    pub(crate) body: StatementList,
 }
 
 pub struct AssignStatement {
@@ -76,6 +81,12 @@ pub enum ExpressionFactor {
     Bracket(Box<Expression>),
     Constant(u32),
     Variable(String),
+}
+
+pub struct RelationExpression {
+    pub(crate) left: Expression,
+    pub(crate) op: String,
+    pub(crate) right: Expression,
 }
 
 pub struct Param {
