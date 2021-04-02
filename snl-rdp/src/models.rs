@@ -34,10 +34,9 @@ pub enum SNLType {
 pub struct SNLTypeArray(pub(crate) SNLBaseType, pub(crate) usize, pub(crate) usize);
 
 pub struct ProcedureDeclare {
-    name: String,
-    params: HashMap<String, SNLType>,
-    declare: Box<ProcedureDeclare>,
-    body: StatementList,
+    pub(crate) params: Vec<Param>,
+    pub(crate) declare: Box<ProgramDeclare>,
+    pub(crate) body: StatementList,
 }
 
 pub type StatementList = Vec<Statement>;
@@ -46,8 +45,9 @@ pub enum Statement {
     Conditional(ConditionalStatement),
     Loop(),
     Input(String),
-    Output(),
+    Output(Expression),
     Return(),
+    Assign(AssignStatement),
     Call(),
 }
 
@@ -55,6 +55,11 @@ pub struct ConditionalStatement {
     pub(crate) condition: (),
     pub(crate) body: StatementList,
     pub(crate) else_body: StatementList,
+}
+
+pub struct AssignStatement {
+    pub(crate) name: String,
+    pub(crate) value: Expression,
 }
 
 pub struct ExpressionTemplate<Next> {
@@ -67,4 +72,14 @@ pub type Expression = ExpressionTemplate<ExpressionTerm>;
 
 pub type ExpressionTerm = ExpressionTemplate<ExpressionFactor>;
 
-pub struct ExpressionFactor {}
+pub enum ExpressionFactor {
+    Bracket(Box<Expression>),
+    Constant(u32),
+    Variable(String),
+}
+
+pub struct Param {
+    pub(crate) is_var: bool,
+    pub(crate) type_name: SNLType,
+    pub(crate) identifiers: Vec<String>,
+}

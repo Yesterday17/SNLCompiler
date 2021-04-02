@@ -77,7 +77,7 @@ VarDeclaration       ::= VAR VarDecList;
 VarDecList           ::= ( TypeName IdentifierList SEMICOLON )+;
 
 ProcDec              ::= ProcDeclaration | ;
-ProcDeclaration      ::= ( PROCEDURE ProcName BR_OPEN ParamList BR_CLOSE SEMICOLON ProcDecPart ProcBody )+;
+ProcDeclaration      ::= ( PROCEDURE ProcName BR_OPEN ParamList? BR_CLOSE SEMICOLON ProcDecPart ProcBody )+;
 ProcName             ::= IDENTIFIER;
 ParamList            ::= Param ( SEMICOLON Param )*;
 Param                ::= VAR? TypeName IdentifierList;

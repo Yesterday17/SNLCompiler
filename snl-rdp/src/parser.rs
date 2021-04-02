@@ -50,7 +50,7 @@ impl Parser {
         };
 
         let procedure_declare = if TokenType::Procedure == self.inner.current() {
-            self.parse_declare_proc()?
+            self.parse_declare_procedure()?
         } else {
             Default::default()
         };
@@ -75,7 +75,6 @@ impl Parser {
                 break;
             }
         }
-
         Ok(declare)
     }
 
@@ -97,9 +96,27 @@ impl Parser {
         Ok(result)
     }
 
-    fn parse_declare_proc(&self) -> Result<HashMap<String, ProcedureDeclare>, String> {
-        // TODO
-        Ok(HashMap::new())
+    fn parse_declare_procedure(&self) -> Result<HashMap<String, ProcedureDeclare>, String> {
+        let mut result = HashMap::new();
+        loop {
+            self.inner.take(TokenType::Procedure)?;
+            let name = self.inner.take(TokenType::Identifer)?.image.clone();
+            self.inner.take(TokenType::BracketOpen)?;
+            let params = self.parse_param_list()?;
+            self.inner.take(TokenType::BracketClose)?;
+            self.inner.take(TokenType::Semicolon)?;
+            let declare = self.parse_declare_part()?;
+            let body = self.parse_program_body()?;
+            result.insert(name, ProcedureDeclare {
+                params,
+                declare: Box::new(declare),
+                body,
+            });
+            if TokenType::Procedure != self.inner.current() {
+                break;
+            }
+        }
+        Ok(result)
     }
 
     fn parse_type_name(&self) -> Result<SNLType, String> {
@@ -137,12 +154,16 @@ impl Parser {
         let top = self.inner.take(TokenType::Int)?.image.as_str();
         self.inner.take(TokenType::SquareBracketClose)?;
         self.inner.take(TokenType::Of)?;
-        let base = self.inner.look_after();
+        let base = self.inner.current();
         let base = match base {
-            Some(TokenType::Integer) => SNLBaseType::Integer,
-            Some(TokenType::Char) => SNLBaseType::Char,
-            _ => return Err(format!("unexpected base type {:?}", base))
+            TokenType::Integer => SNLBaseType::Integer,
+            TokenType::Char => SNLBaseType::Char,
+            t => {
+                let token = self.inner.current_token();
+                return Err(format!("unexpected base type {:?} at line {}, column {}", t, token.line, token.column));
+            }
         };
+        self.inner.move_next();
         Ok(SNLTypeArray(base, usize::from_str(low).unwrap(), usize::from_str(top).unwrap()))
     }
 
@@ -244,8 +265,7 @@ impl Parser {
         self.inner.take(TokenType::BracketOpen)?;
         let exp = self.parse_expression()?;
         self.inner.take(TokenType::BracketClose)?;
-        // TODO
-        Ok(Statement::Output())
+        Ok(Statement::Output(exp))
     }
 
     fn parse_return_statement(&self) -> Result<Statement, String> {
@@ -257,7 +277,11 @@ impl Parser {
     }
 
     fn parse_assign_statement(&self) -> Result<Statement, String> {
-        unimplemented!()
+        let name = self.inner.take(TokenType::Identifer)?.image.clone();
+        // TODO: varimore
+        self.inner.take(TokenType::Assign)?;
+        let value = self.parse_expression()?;
+        Ok(Statement::Assign(AssignStatement { name, value }))
     }
 
     fn parse_relexp(&self) -> Result<(), String> {
@@ -273,6 +297,7 @@ impl Parser {
         let (op, right) = match self.inner.current() {
             TokenType::Add | TokenType::Minus => {
                 let op = self.inner.current_token().image.clone();
+                self.inner.move_next();
                 let right = self.parse_expression()?;
                 (Some(op), Some(Box::new(right)))
             }
@@ -290,6 +315,7 @@ impl Parser {
         let (op, right) = match self.inner.current() {
             TokenType::Multiply | TokenType::Divide => {
                 let op = self.inner.current_token().image.clone();
+                self.inner.move_next();
                 let right = self.parse_term()?;
                 (Some(op), Some(Box::new(right)))
             }
@@ -303,22 +329,55 @@ impl Parser {
     }
 
     fn parse_factor(&self) -> Result<ExpressionFactor, String> {
-        match self.inner.current() {
+        let inner = match self.inner.current() {
             TokenType::BracketOpen => {
                 self.inner.take(TokenType::BracketOpen)?;
-                self.parse_expression()?;
+                let exp = self.parse_expression()?;
                 self.inner.take(TokenType::BracketClose)?;
+                ExpressionFactor::Bracket(Box::new(exp))
             }
             TokenType::Int => {
-                self.inner.take(TokenType::Int)?;
+                let num = self.inner.take(TokenType::Int)?.image.as_str();
+                ExpressionFactor::Constant(u32::from_str(num).unwrap())
             }
             TokenType::Identifer => {
-                let variable = self.inner.take(TokenType::Identifer)?;
+                let variable = self.inner.take(TokenType::Identifer)?.image.clone();
+                // TODO: varimore
                 // let more = self.parse_varimore()?;
+                ExpressionFactor::Variable(variable)
             }
             _ => return Err(format!("unexpected factor token: {:?}", self.inner.current()))
+        };
+        Ok(inner)
+    }
+
+    fn parse_param_list(&self) -> Result<Vec<Param>, String> {
+        let mut result = Vec::new();
+        loop {
+            if TokenType::BracketClose == self.inner.current() {
+                break;
+            }
+            if result.len() != 0 {
+                self.inner.take(TokenType::Comma)?;
+            }
+            let param = self.parse_param()?;
+            result.push(param);
         }
-        // TODO
-        Ok(ExpressionFactor {})
+        Ok(result)
+    }
+
+    fn parse_param(&self) -> Result<Param, String> {
+        let is_var = TokenType::Var == self.inner.current();
+        if is_var {
+            self.inner.move_next();
+        }
+
+        let type_name = self.parse_type_name()?;
+        let identifiers = self.parse_identifier_list()?;
+        Ok(Param {
+            is_var,
+            type_name,
+            identifiers,
+        })
     }
 }
