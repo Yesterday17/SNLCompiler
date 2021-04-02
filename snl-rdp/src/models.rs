@@ -200,7 +200,7 @@ pub struct RelationExpression {
 #[derive(Debug, Serialize)]
 pub struct Param {
     pub is_var: bool,
-    pub inner: TypedIdentifiers,
+    pub definition: TypedIdentifiers,
 }
 
 #[derive(Debug, Serialize)]

@@ -5,8 +5,8 @@ type t1 = integer;
      t2 = tnotexist; { Undefined Type }
 var integer                  test1, test2;
     char                     ch;
-    array [15..5] of integer t1; { Duplicated Identifier }
-                                 { Invalid Array Definition }
+    array [15..5] of integer t1; { Invalid Array Definition }
+                                 { Duplicated Identifier }
 
 procedure proc(integer param1);
   var integer param1    { Duplicated Identifier }

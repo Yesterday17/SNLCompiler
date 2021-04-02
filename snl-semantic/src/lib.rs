@@ -82,6 +82,25 @@ impl Semantic {
 
             // parameters
             for param in p.params.iter() {
+                // param type
+                self.analyze_type(&Positional::from_position(
+                    param.position(),
+                    &param.definition.type_name,
+                ));
+                // param name
+                for param_name in param.definition.identifiers.iter() {
+                    if self.symbols.borrow().has_own_property(param_name.as_str()) {
+                        self.errors.borrow_mut().push(Positional::from_position(
+                            param_name.position(),
+                            Error::DuplicatedIdentifier(param_name.inner().to_owned()),
+                        ));
+                    } else {
+                        self.symbols.borrow_mut().insert(
+                            param_name.inner().clone(),
+                            Symbol::Variable(param.definition.type_name.clone()),
+                        );
+                    }
+                }
                 // TODO param.inner
             }
 

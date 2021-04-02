@@ -454,7 +454,7 @@ impl Parser {
         let identifiers = self.parse_identifier_list()?;
         Ok(Positional::from_position(type_name.position(), Param {
             is_var,
-            inner: TypedIdentifiers {
+            definition: TypedIdentifiers {
                 type_name: type_name.into_inner(),
                 identifiers,
             },
