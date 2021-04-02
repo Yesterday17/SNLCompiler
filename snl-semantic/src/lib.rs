@@ -278,6 +278,13 @@ impl Semantic {
                                                         break;
                                                     }
                                                 }
+                                                if type_got == "" {
+                                                    self.errors.borrow_mut().push(Positional::from_position(
+                                                        (0, 0),// FIXME
+                                                        Error::UndefinedRecordField(field.to_owned()),
+                                                    ));
+                                                    return type_got;
+                                                }
                                                 type_got
                                             }
                                             None => current_type.clone(),

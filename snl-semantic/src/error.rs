@@ -23,8 +23,10 @@ pub enum Error {
     /// Unexpected array index
     UnexpectedArrayIndex,
 
-    /// Field is only available on Records
+    /// Field is only available in Records
     UnexpectedField,
+    /// Undefined field in records
+    UndefinedRecordField(String),
 
     /// Different types between asssigner and assignee
     ///

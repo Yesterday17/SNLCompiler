@@ -2,16 +2,16 @@
 
 program program3
 type t1 = integer;
-     t2 = tnotexist; { Undefined Type }
+     t2 = tnotexist; { Undefined Type }                           { implemented }
 var integer                  test1, test2;
     char                     ch;
-    array [15..5] of integer t1; { Invalid Array Definition }
-                                 { Duplicated Identifier }
+    array [15..5] of integer t1; { Invalid Array Definition }     { implemented }
+                                 { Duplicated Identifier }        { implemented }
 
 procedure proc(integer param1);
-  var integer param1    { Duplicated Identifier }
+  var integer param1    { Duplicated Identifier }                 { implemented }
             , param2
-            , proc;     { Duplicated Identifier }
+            , proc;     { Duplicated Identifier }                 { implemented }
       char    param3;
   begin
     notexist := param1; { Invalid Assignee }
@@ -25,12 +25,14 @@ procedure recordtest();
         array [0..10] of integer fieldArray;
       end
               rec1, rec2;
+      char    testCh;
   begin
       write(rec1.fieldArray[5]);
-      write(rec1.fieldArray2[5])
+      write(rec1.fieldArray2[5]);      { Undefined Record Field } { implemented }
+      write(rec1.fieldArray[testCh])   { Uncompatable Type }      { implemented }
   end
 
-procedure test1();      { Duplicated Identifier }
+procedure test1();      { Duplicated Identifier }                 { implemented }
   begin
     test1()             { No error, though it will cause stack overflow }
   end
@@ -39,5 +41,5 @@ begin
   proc();               { Call Parameter Count Mismatch }
   proc(ch);             { Call Parameter Type Mismatch }
   proc(0);
-  test1()               { Unexpected Type }
+  test1()               { Unexpected Type }                       { implemented }
 end.
