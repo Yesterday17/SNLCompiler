@@ -1,6 +1,7 @@
 use serde::Serialize;
 use std::ops::Deref;
 use snl_lexer::token::Token;
+use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Serialize, Clone)]
 pub struct Positional<T> {
@@ -24,6 +25,10 @@ impl<T> Positional<T> {
 
     pub fn from_token(token: &Token, inner: T) -> Self {
         Positional::new(token.line, token.column, inner)
+    }
+
+    pub fn dump(inner: T) -> Self {
+        Self::new(0, 0, inner)
     }
 
     pub fn inner(&self) -> &T {
@@ -79,11 +84,6 @@ impl TypeDeclare {
     pub fn base(&self) -> Positional<&SNLType> {
         Positional::from_position(self.base.position(), &self.base.inner)
     }
-
-    #[inline]
-    pub fn base_raw(&self) -> SNLType {
-        self.base.inner.clone()
-    }
 }
 
 #[derive(Debug, Serialize)]
@@ -100,14 +100,23 @@ impl ProcedureDeclare {
     }
 }
 
-#[derive(Debug, Serialize, PartialEq, Clone)]
+#[derive(Debug, Serialize)]
 #[serde(tag = "type")]
 pub enum SNLBaseType {
     Integer,
     Char,
 }
 
-#[derive(Debug, Serialize, Clone)]
+impl ToString for SNLBaseType {
+    fn to_string(&self) -> String {
+        match self {
+            SNLBaseType::Integer => "integer".to_string(),
+            SNLBaseType::Char => "char".to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
 #[serde(tag = "type", content = "value")]
 pub enum SNLType {
     Integer,
@@ -117,16 +126,65 @@ pub enum SNLType {
     Others(String),
 }
 
-#[derive(Debug, Serialize, PartialEq, Clone)]
+/// Begin with:
+/// `|`: integer or char
+/// `[`: array
+/// `{`: record
+/// `#`: custom
+impl ToString for SNLType {
+    fn to_string(&self) -> String {
+        match self {
+            SNLType::Integer => "|integer".to_string(),
+            SNLType::Char => "|char".to_string(),
+            SNLType::Array(array) => array.to_string(),
+            SNLType::Record(record) => {
+                // a,b,:integer;c,d,:char
+                let mut fields: BTreeMap<String, BTreeSet<&str>> = Default::default();
+                for r in record.iter() {
+                    let ty = r.type_name.to_string();
+                    if !fields.contains_key(&ty) {
+                        fields.insert(ty, r.identifiers.iter().map(|r| r.inner.as_str()).collect());
+                    } else {
+                        for f in r.identifiers.iter() {
+                            fields.get_mut(&ty).unwrap().insert(f.inner());
+                        }
+                    }
+                }
+
+                let mut result = "{".to_owned();
+                for (type_name, variables) in fields {
+                    for var in variables {
+                        result += var;
+                        result += ",";
+                    }
+                    result += ":";
+                    result += &type_name;
+                    result += ";";
+                }
+                result += "}";
+                result
+            }
+            SNLType::Others(others) => format!("#{}", others)
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
 pub struct SNLTypeArray {
     pub base: SNLBaseType,
     pub lower_bound: usize,
     pub upper_bound: usize,
 }
 
+impl ToString for SNLTypeArray {
+    fn to_string(&self) -> String {
+        format!("[{}..{};{}]", self.lower_bound, self.upper_bound, self.base.to_string())
+    }
+}
+
 pub type SNLTypeRecord = Vec<TypedIdentifiers>;
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize)]
 pub struct TypedIdentifiers {
     pub type_name: SNLType,
     pub identifiers: PositionalVec<String>,
@@ -219,4 +277,28 @@ pub struct VariableVisit {
 pub struct VariableRepresent {
     pub base: String,
     pub visit: Option<VariableVisit>,
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::models::{SNLType, SNLTypeArray, SNLBaseType, TypedIdentifiers, Positional};
+
+    #[test]
+    fn test_type_signature() {
+        assert_eq!(SNLType::Integer.to_string(), "|integer");
+        assert_eq!(SNLType::Char.to_string(), "|char");
+        assert_eq!(SNLType::Array(SNLTypeArray {
+            base: SNLBaseType::Integer,
+            lower_bound: 0,
+            upper_bound: 10,
+        }).to_string(), "[0..10;integer]");
+        assert_eq!(SNLType::Record(vec![
+            TypedIdentifiers {
+                type_name: SNLType::Integer,
+                identifiers: vec![Positional::dump("a".to_owned()), Positional::dump("c".to_owned())],
+            },
+            TypedIdentifiers { type_name: SNLType::Integer, identifiers: vec![Positional::dump("b".to_owned())] },
+        ]).to_string(), "{a,b,c,:|integer;}");
+        assert_eq!(SNLType::Others("others".to_owned()).to_string(), "#others");
+    }
 }

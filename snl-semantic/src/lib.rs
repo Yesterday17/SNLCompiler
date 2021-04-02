@@ -42,7 +42,7 @@ impl Semantic {
                 // analyze whether original is valid
                 self.analyze_type(&t.inner().base());
                 // create new alias type
-                self.symbols.borrow_mut().insert(t.name().to_owned(), Symbol::Type(t.inner().base_raw()));
+                self.symbols.borrow_mut().insert(t.name().to_owned(), Symbol::Type(t.inner().base().inner().to_string()));
             }
         }
 
@@ -57,7 +57,7 @@ impl Semantic {
                         Error::DuplicatedIdentifier(variable_name.inner().clone()),
                     ))
                 } else {
-                    self.symbols.borrow_mut().insert(variable_name.inner().clone(), Symbol::Variable(v.type_name.clone()));
+                    self.symbols.borrow_mut().insert(variable_name.inner().clone(), Symbol::Variable(v.type_name.to_string()));
                 }
             }
         }
@@ -97,7 +97,7 @@ impl Semantic {
                     } else {
                         self.symbols.borrow_mut().insert(
                             param_name.inner().clone(),
-                            Symbol::Variable(param.definition.type_name.clone()),
+                            Symbol::Variable(param.definition.type_name.to_string()),
                         );
                     }
                 }
@@ -125,14 +125,11 @@ impl Semantic {
                         Some(symbol) => {
                             match symbol {
                                 Symbol::Variable(variable) => {
-                                    match variable {
-                                        SNLType::Integer | SNLType::Char => {}
-                                        _ => {
-                                            self.errors.borrow_mut().push(Positional::from_position(
-                                                input.position(),
-                                                Error::InvalidReadType(variable.clone()),
-                                            ))
-                                        }
+                                    if !variable.starts_with("|") {
+                                        self.errors.borrow_mut().push(Positional::from_position(
+                                            input.position(),
+                                            Error::InvalidReadType(variable.clone()),
+                                        ))
                                     }
                                 }
                                 p => {

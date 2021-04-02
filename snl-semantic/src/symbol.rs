@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 use std::cmp::min;
-use snl_rdp::models::SNLType;
 
 #[derive(Debug)]
 pub enum Symbol {
-    Variable(SNLType),
+    Variable(String),
     Procedure(/* TODO */),
-    Type(SNLType),
+    Type(String),
 }
 
 pub struct SymbolTable<T> {

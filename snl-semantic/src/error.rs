@@ -35,5 +35,5 @@ pub enum Error {
     InvalidBoolExpression,
 
     /// Read only accepts Integer and Char
-    InvalidReadType(SNLType),
+    InvalidReadType(String),
 }
