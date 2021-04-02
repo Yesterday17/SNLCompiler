@@ -139,7 +139,7 @@ pub type StatementList = Vec<Statement>;
 pub enum Statement {
     Conditional(ConditionalStatement),
     Loop(LoopStatement),
-    Input(String),
+    Input(Positional<String>),
     Output(Expression),
     Return(Expression),
     Assign(AssignStatement),

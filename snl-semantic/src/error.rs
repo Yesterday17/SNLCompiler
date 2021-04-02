@@ -14,6 +14,8 @@ pub enum Error {
     /// `(got, expect)`
     TypeMismatch(String, String),
 
+    /// Invalid array, for example, lower bound is larger than higher bound
+    InvalidArrayDefinition,
     /// Constant array visit index is lower than lower bound or higher than high bound
     ///
     /// `(index, low, high)`
@@ -31,6 +33,7 @@ pub enum Error {
     /// Procedure call parameter count mismatch
     CallParameterCountMismatch,
     InvalidBoolExpression,
-    /// Invalid array, for example, lower bound is larger than higher bound
-    InvalidArrayDefinition,
+
+    /// Read only accepts Integer and Char
+    InvalidReadType(SNLType),
 }

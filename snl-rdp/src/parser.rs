@@ -297,9 +297,9 @@ impl Parser {
     fn parse_input_statement(&self) -> Result<Statement, String> {
         self.inner.take(TokenType::Read)?;
         self.inner.take(TokenType::BracketOpen)?;
-        let name = self.inner.take(TokenType::Identifer)?.image.clone();
+        let name = self.inner.take(TokenType::Identifer)?;
         self.inner.take(TokenType::BracketClose)?;
-        Ok(Statement::Input(name))
+        Ok(Statement::Input(Positional::from_token(name, name.image.clone())))
     }
 
     fn parse_output_statement(&self) -> Result<Statement, String> {

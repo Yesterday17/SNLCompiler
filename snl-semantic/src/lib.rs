@@ -120,7 +120,38 @@ impl Semantic {
             match statement {
                 Statement::Conditional(_) => {}
                 Statement::Loop(_) => {}
-                Statement::Input(_) => {}
+                Statement::Input(input) => {
+                    match self.symbols.borrow().query(input) {
+                        Some(symbol) => {
+                            match symbol {
+                                Symbol::Variable(variable) => {
+                                    match variable {
+                                        SNLType::Integer | SNLType::Char => {}
+                                        _ => {
+                                            self.errors.borrow_mut().push(Positional::from_position(
+                                                input.position(),
+                                                Error::InvalidReadType(variable.clone()),
+                                            ))
+                                        }
+                                    }
+                                }
+                                p => {
+                                    self.errors.borrow_mut().push(Positional::from_position(
+                                        input.position(),
+                                        Error::TypeMismatch("Variable".to_owned(), format!("{:?}", p)),
+                                    ))
+                                }
+                            }
+                        }
+                        None => {
+                            // no symbol found
+                            self.errors.borrow_mut().push(Positional::from_position(
+                                input.position(),
+                                Error::UndefinedIdentifier(input.inner().to_owned()),
+                            ))
+                        }
+                    }
+                }
                 Statement::Output(_) => {}
                 Statement::Return(_) => {}
                 Statement::Assign(_) => {}
