@@ -116,7 +116,41 @@ impl Semantic {
     }
 
     fn analyze_statement_list(&self, list: &StatementList) {
-        //
+        for statement in list.iter() {
+            match statement {
+                Statement::Conditional(_) => {}
+                Statement::Loop(_) => {}
+                Statement::Input(_) => {}
+                Statement::Output(_) => {}
+                Statement::Return(_) => {}
+                Statement::Assign(_) => {}
+                Statement::Call(call) => {
+                    // look for symbol in table
+                    match self.symbols.borrow().query(call.name()) {
+                        Some(symbol) => {
+                            match symbol {
+                                // TODO: check procedure signature
+                                Symbol::Procedure() => {}
+                                // idenfier called is not procedure
+                                p => {
+                                    self.errors.borrow_mut().push(Positional::from_position(
+                                        call.position(),
+                                        Error::TypeMismatch("Procedure".to_owned(), format!("{:?}", p)),
+                                    ))
+                                }
+                            }
+                        }
+                        None => {
+                            // no symbol found
+                            self.errors.borrow_mut().push(Positional::from_position(
+                                call.position(),
+                                Error::UndefinedIdentifier(call.name().to_owned()),
+                            ))
+                        }
+                    }
+                }
+            }
+        }
     }
 
     fn analyze_type(&self, t: &Positional<&SNLType>) {

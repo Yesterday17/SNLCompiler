@@ -6,21 +6,26 @@ pub enum Error {
     DuplicatedIdentifier(String),
     /// Identified use is not found in symbol table
     UndefinedIdentifier(String),
+
     /// Unknown type used
     UndefinedType(String),
-    /// Different type between `expected` and `got`
+    /// Variable type `got` is different from `expected`
     ///
     /// `(got, expect)`
-    UnexpectedType(String, String),
+    TypeMismatch(String, String),
+
     /// Constant array visit index is lower than lower bound or higher than high bound
     ///
     /// `(index, low, high)`
     ArrayIndexOutbound(u32, u32, u32),
+
     /// Different types between asssigner and assignee
     ///
     /// `(got, expected)`
     AssignTypeMismatch(SNLType, SNLType),
+    /// Assignee can not accept any data
     InvalidAssignee,
+
     /// Procedure call parameter type mismatch
     CallParameterTypeMismatch,
     /// Procedure call parameter count mismatch

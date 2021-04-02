@@ -143,7 +143,7 @@ pub enum Statement {
     Output(Expression),
     Return(Expression),
     Assign(AssignStatement),
-    Call(CallStatement),
+    Call(Positional<CallStatement>),
 }
 
 #[derive(Debug, Serialize)]
@@ -167,8 +167,14 @@ pub struct AssignStatement {
 
 #[derive(Debug, Serialize)]
 pub struct CallStatement {
-    pub name: String,
+    pub(crate) name: String,
     pub params: Vec<Expression>,
+}
+
+impl CallStatement {
+    pub fn name(&self) -> &str {
+        self.name.as_str()
+    }
 }
 
 #[derive(Debug, Serialize)]

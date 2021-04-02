@@ -320,7 +320,7 @@ impl Parser {
 
     fn parse_call_statement(&self) -> Result<Statement, String> {
         let mut params = Vec::new();
-        let name = self.inner.take(TokenType::Identifer)?.image.clone();
+        let name = self.inner.take(TokenType::Identifer)?;
         self.inner.take(TokenType::BracketOpen)?;
         loop {
             if TokenType::BracketClose == self.inner.current() {
@@ -333,10 +333,10 @@ impl Parser {
             params.push(param);
         }
         self.inner.take(TokenType::BracketClose)?;
-        Ok(Statement::Call(CallStatement {
-            name,
+        Ok(Statement::Call(Positional::from_token(&name, CallStatement {
+            name: name.image.clone(),
             params,
-        }))
+        })))
     }
 
     fn parse_assign_statement(&self) -> Result<Statement, String> {

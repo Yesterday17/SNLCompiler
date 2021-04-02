@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::cmp::min;
 use snl_rdp::models::SNLType;
 
+#[derive(Debug)]
 pub enum Symbol {
     Variable(SNLType),
     Procedure(/* TODO */),
