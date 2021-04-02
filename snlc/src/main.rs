@@ -65,7 +65,7 @@ fn main() {
     }
 
     let parser = snl_rdp::Parser::new(tokens);
-    parser.parse().expect("Failed to parse");
+    let _ast = parser.parse().expect("Failed to parse");
     if mode == "parse" {
         // TODO
     }

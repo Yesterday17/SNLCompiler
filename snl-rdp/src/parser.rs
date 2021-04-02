@@ -15,15 +15,19 @@ impl Parser {
         }
     }
 
-    pub fn parse(&self) -> Result<(), String> {
+    pub fn parse(&self) -> Result<Program, String> {
         self.parse_program()
     }
 
-    fn parse_program(&self) -> Result<(), String> {
+    fn parse_program(&self) -> Result<Program, String> {
         let name = self.parse_program_head()?;
         let declare = self.parse_declare_part()?;
-        self.parse_program_body()?;
-        Ok(())
+        let body = self.parse_program_body()?;
+        Ok(Program {
+            name,
+            declare,
+            body,
+        })
     }
 
     fn parse_program_head(&self) -> Result<String, String> {
@@ -33,28 +37,28 @@ impl Parser {
     }
 
     fn parse_declare_part(&self) -> Result<ProgramDeclare, String> {
-        let dec_type = if TokenType::Type == self.inner.current() {
+        let type_declare = if TokenType::Type == self.inner.current() {
             self.parse_declare_type()?
         } else {
             Default::default()
         };
 
-        let dec_var = if TokenType::Var == self.inner.current() {
+        let variable_declare = if TokenType::Var == self.inner.current() {
             self.parse_declare_var()?
         } else {
             Default::default()
         };
 
-        let dec_proc = if TokenType::Procedure == self.inner.current() {
+        let procedure_declare = if TokenType::Procedure == self.inner.current() {
             self.parse_declare_proc()?
         } else {
             Default::default()
         };
 
         Ok(ProgramDeclare {
-            dec_type,
-            dec_var,
-            dec_proc,
+            type_declare,
+            variable_declare,
+            procedure_declare,
         })
     }
 
@@ -113,9 +117,8 @@ impl Parser {
                 Ok(SNLType::Array(self.parse_array_type()?))
             }
             TokenType::Record => {
-                unimplemented!();
                 // TODO
-                Ok(SNLType::Record())
+                unimplemented!();
             }
             TokenType::Identifer => {
                 let name = self.inner.current_token().image.clone();
@@ -171,8 +174,151 @@ impl Parser {
         Ok(ids)
     }
 
-    fn parse_program_body(&self) -> Result<(), String> {
+    fn parse_program_body(&self) -> Result<StatementList, String> {
+        self.inner.take(TokenType::Begin)?;
+        let body = self.parse_statement_list()?;
+        self.inner.take(TokenType::End)?;
+        Ok(body)
+    }
+
+    fn parse_statement_list(&self) -> Result<StatementList, String> {
+        let mut statements = Vec::new();
+        loop {
+            if let Some(statement) = self.parse_statement()? {
+                statements.push(statement);
+                self.inner.take(TokenType::Semicolon)?;
+            } else {
+                break;
+            }
+        }
+        Ok(statements)
+    }
+
+    fn parse_statement(&self) -> Result<Option<Statement>, String> {
+        Ok(match self.inner.current() {
+            TokenType::If => Some(self.parse_conditional_statement()?),
+            TokenType::While => Some(self.parse_loop_statement()?),
+            TokenType::Read => Some(self.parse_input_statement()?),
+            TokenType::Write => Some(self.parse_output_statement()?),
+            TokenType::Return => Some(self.parse_return_statement()?),
+            TokenType::Identifer => {
+                match self.inner.look_after() {
+                    Some(TokenType::BracketOpen) => Some(self.parse_call_statement()?),
+                    Some(_) => Some(self.parse_assign_statement()?),
+                    None => return Err(format!("unexpected EOF after statement Identifer")),
+                }
+            }
+            _ => None,
+        })
+    }
+
+    fn parse_conditional_statement(&self) -> Result<Statement, String> {
+        self.inner.take(TokenType::If)?;
+        let condition = self.parse_relexp()?;
+        self.inner.take(TokenType::Then)?;
+        let body = self.parse_statement_list()?;
+        self.inner.take(TokenType::Else)?;
+        let else_body = self.parse_statement_list()?;
+        self.inner.take(TokenType::Fi)?;
+        Ok(Statement::Conditional(ConditionalStatement {
+            condition,
+            body,
+            else_body,
+        }))
+    }
+
+    fn parse_loop_statement(&self) -> Result<Statement, String> {
+        unimplemented!()
+    }
+
+    fn parse_input_statement(&self) -> Result<Statement, String> {
+        self.inner.take(TokenType::Read)?;
+        self.inner.take(TokenType::BracketOpen)?;
+        let name = self.inner.take(TokenType::Identifer)?.image.clone();
+        self.inner.take(TokenType::BracketClose)?;
+        Ok(Statement::Input(name))
+    }
+
+    fn parse_output_statement(&self) -> Result<Statement, String> {
+        self.inner.take(TokenType::Write)?;
+        self.inner.take(TokenType::BracketOpen)?;
+        let exp = self.parse_expression()?;
+        self.inner.take(TokenType::BracketClose)?;
         // TODO
+        Ok(Statement::Output())
+    }
+
+    fn parse_return_statement(&self) -> Result<Statement, String> {
+        unimplemented!()
+    }
+
+    fn parse_call_statement(&self) -> Result<Statement, String> {
+        unimplemented!()
+    }
+
+    fn parse_assign_statement(&self) -> Result<Statement, String> {
+        unimplemented!()
+    }
+
+    fn parse_relexp(&self) -> Result<(), String> {
+        self.parse_expression()?;
+        // TODO: CmdOp
+        self.parse_expression()?;
         Ok(())
+    }
+
+    // FIXME: type
+    fn parse_expression(&self) -> Result<Expression, String> {
+        let left = self.parse_term()?;
+        let (op, right) = match self.inner.current() {
+            TokenType::Add | TokenType::Minus => {
+                let op = self.inner.current_token().image.clone();
+                let right = self.parse_expression()?;
+                (Some(op), Some(Box::new(right)))
+            }
+            _ => { (None, None) }
+        };
+        Ok(Expression {
+            left,
+            op,
+            right,
+        })
+    }
+
+    fn parse_term(&self) -> Result<ExpressionTerm, String> {
+        let left = self.parse_factor()?;
+        let (op, right) = match self.inner.current() {
+            TokenType::Multiply | TokenType::Divide => {
+                let op = self.inner.current_token().image.clone();
+                let right = self.parse_term()?;
+                (Some(op), Some(Box::new(right)))
+            }
+            _ => { (None, None) }
+        };
+        Ok(ExpressionTerm {
+            left,
+            op,
+            right,
+        })
+    }
+
+    fn parse_factor(&self) -> Result<ExpressionFactor, String> {
+        match self.inner.current() {
+            TokenType::BracketOpen => {
+                self.inner.take(TokenType::BracketOpen)?;
+                self.parse_expression()?;
+                self.inner.take(TokenType::BracketClose)?;
+            }
+            TokenType::Int => {
+                self.inner.take(TokenType::Int)?;
+            }
+            TokenType::Identifer => {
+                let variable = self.inner.take(TokenType::Identifer)?;
+                // let more = self.parse_varimore()?;
+            }
+            _ => return Err(format!("unexpected factor token: {:?}", self.inner.current()))
+        }
+        // TODO
+        Ok(ExpressionFactor {})
     }
 }
