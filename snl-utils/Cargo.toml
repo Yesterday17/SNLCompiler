@@ -1,9 +1,8 @@
 [package]
-name = "snl-rdp"
+name = "snl-utils"
 version = "0.1.0"
 authors = ["Yesterday17 <t@yesterday17.cn>"]
 edition = "2018"
 
 [dependencies]
 snl-lexer = { path = "../snl-lexer" }
-snl-utils = { path = "../snl-utils" }

@@ -25,7 +25,7 @@ impl Display for Token {
 }
 
 #[repr(u8)]
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TokenType {
     Identifer,
     Int,

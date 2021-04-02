@@ -1,5 +1,6 @@
 use clap::{App, Arg};
 use std::io::Read;
+use std::process::exit;
 
 fn main() {
     let matches = App::new("SNL Compiler")
@@ -8,7 +9,7 @@ fn main() {
             .required(true)
             .takes_value(true)
             .possible_values(&["lex", "parse", "semantic"])
-            .default_value("lex")
+            .default_value("parse")
         )
         .arg(Arg::with_name("lexer")
             .long("lexer")
@@ -47,7 +48,7 @@ fn main() {
         data
     };
 
-    let lex_result = match matches.value_of("lexer").unwrap() {
+    let tokens = match matches.value_of("lexer").unwrap() {
         "rs" => {
             snl_lexer::read_tokens(&input).unwrap()
         }
@@ -57,8 +58,15 @@ fn main() {
         &_ => unreachable!(),
     };
     if mode == "lex" {
-        for token in lex_result {
+        for token in tokens {
             println!("{}", token);
         }
+        exit(0);
+    }
+
+    let parser = snl_rdp::Parser::new(tokens);
+    parser.parse().expect("Failed to parse");
+    if mode == "parse" {
+        // TODO
     }
 }
