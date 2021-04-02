@@ -125,7 +125,8 @@ impl Semantic {
                         Some(symbol) => {
                             match symbol {
                                 Symbol::Variable(variable) => {
-                                    if !variable.starts_with("|") {
+                                    // only accept integer or char
+                                    if variable.starts_with("[") || variable.starts_with("{") || variable.starts_with("#") {
                                         self.errors.borrow_mut().push(Positional::from_position(
                                             input.position(),
                                             Error::InvalidReadType(variable.clone()),
@@ -135,7 +136,7 @@ impl Semantic {
                                 p => {
                                     self.errors.borrow_mut().push(Positional::from_position(
                                         input.position(),
-                                        Error::TypeMismatch("Variable".to_owned(), format!("{:?}", p)),
+                                        Error::UncompatableType("Variable".to_owned(), format!("{:?}", p)),
                                     ))
                                 }
                             }
@@ -149,8 +150,12 @@ impl Semantic {
                         }
                     }
                 }
-                Statement::Output(output) => self.analyze_expression(output),
-                Statement::Return(ret) => self.analyze_expression(ret),
+                Statement::Output(output) => {
+                    self.analyze_expression(output);
+                }
+                Statement::Return(ret) => {
+                    self.analyze_expression(ret);
+                }
                 Statement::Assign(_) => {}
                 Statement::Call(call) => {
                     // look for symbol in table
@@ -163,7 +168,7 @@ impl Semantic {
                                 p => {
                                     self.errors.borrow_mut().push(Positional::from_position(
                                         call.position(),
-                                        Error::TypeMismatch("Procedure".to_owned(), format!("{:?}", p)),
+                                        Error::UncompatableType("Procedure".to_owned(), format!("{:?}", p)),
                                     ))
                                 }
                             }
@@ -207,7 +212,136 @@ impl Semantic {
         }
     }
 
-    fn analyze_expression(&self, exp: &Expression) {
-        //
+    fn analyze_expression(&self, exp: &Expression) -> String {
+        let left_type = self.analyze_expression_term(exp.left.inner());
+        match &exp.right {
+            Some(right) => {
+                let right_type = self.analyze_expression(right.inner());
+                if left_type != right_type {
+                    self.errors.borrow_mut().push(Positional::from_position(
+                        exp.left.position(),
+                        Error::UncompatableType(right_type, left_type.clone()),
+                    ))
+                }
+            }
+            None => {}
+        }
+        left_type
+    }
+
+    fn analyze_expression_term(&self, exp: &ExpressionTerm) -> String {
+        let left_type = self.analyze_expression_factor(exp.left.inner());
+        match &exp.right {
+            Some(right) => {
+                let right_type = self.analyze_expression_term(right.inner());
+                if left_type != right_type {
+                    self.errors.borrow_mut().push(Positional::from_position(
+                        exp.left.position(),
+                        Error::UncompatableType(right_type, left_type.clone()),
+                    ))
+                }
+            }
+            None => {}
+        }
+        left_type
+    }
+
+    fn analyze_expression_factor(&self, exp: &ExpressionFactor) -> String {
+        match exp {
+            ExpressionFactor::Bracket(exp) => self.analyze_expression(exp),
+            ExpressionFactor::Constant(_) => SNLType::Integer.to_string(),
+            ExpressionFactor::Variable(repr) => {
+                match self.symbols.borrow().query(&repr.base) {
+                    Some(symbol) => {
+                        match symbol {
+                            Symbol::Variable(current_type) => {
+                                match &repr.visit {
+                                    Some(visit) => {
+                                        // record field
+                                        let current_type = match &visit.dot {
+                                            Some(field) => {
+                                                if !current_type.starts_with("{") {
+                                                    self.errors.borrow_mut().push(Positional::from_position(
+                                                        (0, 0),// FIXME
+                                                        Error::UnexpectedField,
+                                                    ));
+                                                    return "".to_owned();
+                                                }
+
+                                                let mut type_got = String::new();
+                                                let parts: Vec<_> = current_type[1..(current_type.len() - 1)].split(";").collect();
+                                                for p in parts {
+                                                    let fields: Vec<_> = p.split(":").collect();
+                                                    let variables: Vec<_> = fields[0].split(",").collect();
+                                                    if variables.contains(&field.as_str()) {
+                                                        type_got += fields[1];
+                                                        break;
+                                                    }
+                                                }
+                                                type_got
+                                            }
+                                            None => current_type.clone(),
+                                        };
+                                        // array index
+                                        match &visit.sqbr {
+                                            Some(index) => {
+                                                // need array type
+                                                if !current_type.starts_with("[") {
+                                                    self.errors.borrow_mut().push(Positional::from_position(
+                                                        (0, 0),// FIXME
+                                                        Error::UnexpectedArrayIndex,
+                                                    ));
+                                                    return "".to_owned();
+                                                }
+
+                                                // index type
+                                                let index_type = self.analyze_expression(index);
+                                                if index_type != "integer" {
+                                                    self.errors.borrow_mut().push(Positional::from_position(
+                                                        (0, 0),// FIXME
+                                                        Error::UncompatableType(index_type, "integer".to_owned()),
+                                                    ));
+                                                    return "".to_owned();
+                                                }
+
+                                                // return type
+                                                if current_type.ends_with("integer]") {
+                                                    "integer".to_owned()
+                                                } else {
+                                                    "char".to_owned()
+                                                }
+                                            }
+                                            None => current_type,
+                                        }
+                                    }
+                                    None => current_type.to_owned()
+                                }
+                            }
+                            Symbol::Procedure() => {
+                                self.errors.borrow_mut().push(Positional::from_position(
+                                    (0, 0),// FIXME
+                                    Error::UncompatableType("Variable".to_string(), "Procedure".to_owned()),
+                                ));
+                                "".to_owned()
+                            }
+                            Symbol::Type(ty) => {
+                                self.errors.borrow_mut().push(Positional::from_position(
+                                    (0, 0),// FIXME
+                                    Error::UncompatableType("Variable".to_string(), ty.to_owned()),
+                                ));
+                                "".to_owned()
+                            }
+                        }
+                    }
+                    None => {
+                        self.errors.borrow_mut().push(Positional::from_position(
+                            (0, 0),// FIXME
+                            Error::UndefinedIdentifier(repr.base.clone()),
+                        ));
+                        "".to_owned()
+                    }
+                }
+            }
+        }
     }
 }

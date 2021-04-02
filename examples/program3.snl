@@ -19,6 +19,17 @@ procedure proc(integer param1);
     param3 := 10        { Unexpected Type }
   end
 
+procedure recordtest();
+  var record
+        integer fieldA, fieldB;
+        array [0..10] of integer fieldArray;
+      end
+              rec1, rec2;
+  begin
+      write(rec1.fieldArray[5]);
+      write(rec1.fieldArray2[5])
+  end
+
 procedure test1();      { Duplicated Identifier }
   begin
     test1()             { No error, though it will cause stack overflow }

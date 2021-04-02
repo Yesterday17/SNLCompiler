@@ -2,8 +2,9 @@ use serde::Serialize;
 use std::ops::Deref;
 use snl_lexer::token::Token;
 use std::collections::{BTreeMap, BTreeSet};
+use std::str::FromStr;
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct Positional<T> {
     pub line: u32,
     pub column: u32,
@@ -100,7 +101,7 @@ impl ProcedureDeclare {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq)]
 #[serde(tag = "type")]
 pub enum SNLBaseType {
     Integer,
@@ -116,7 +117,19 @@ impl ToString for SNLBaseType {
     }
 }
 
-#[derive(Debug, Serialize)]
+impl FromStr for SNLBaseType {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "integer" => Self::Integer,
+            "char" => Self::Char,
+            _ => unreachable!()
+        })
+    }
+}
+
+#[derive(Debug, Serialize, PartialEq)]
 #[serde(tag = "type", content = "value")]
 pub enum SNLType {
     Integer,
@@ -127,18 +140,17 @@ pub enum SNLType {
 }
 
 /// Begin with:
-/// `|`: integer or char
+///  letter: integer or char
 /// `[`: array
 /// `{`: record
 /// `#`: custom
 impl ToString for SNLType {
     fn to_string(&self) -> String {
         match self {
-            SNLType::Integer => "|integer".to_string(),
-            SNLType::Char => "|char".to_string(),
+            SNLType::Integer => "integer".to_string(),
+            SNLType::Char => "char".to_string(),
             SNLType::Array(array) => array.to_string(),
             SNLType::Record(record) => {
-                // a,b,:integer;c,d,:char
                 let mut fields: BTreeMap<String, BTreeSet<&str>> = Default::default();
                 for r in record.iter() {
                     let ty = r.type_name.to_string();
@@ -152,14 +164,25 @@ impl ToString for SNLType {
                 }
 
                 let mut result = "{".to_owned();
+                let mut is_first = true;
                 for (type_name, variables) in fields {
+                    if !is_first {
+                        result += ";";
+                    } else {
+                        is_first = false;
+                    }
+
+                    let mut is_first = true;
                     for var in variables {
+                        if !is_first {
+                            result += ",";
+                        } else {
+                            is_first = false;
+                        }
                         result += var;
-                        result += ",";
                     }
                     result += ":";
                     result += &type_name;
-                    result += ";";
                 }
                 result += "}";
                 result
@@ -169,7 +192,54 @@ impl ToString for SNLType {
     }
 }
 
-#[derive(Debug, Serialize)]
+impl FromStr for SNLType {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s == "integer" {
+            Ok(SNLType::Integer)
+        } else if s == "char" {
+            Ok(SNLType::Char)
+        } else if s.starts_with("[") {
+            let balance = if s.ends_with("]") {
+                s.len()
+            } else {
+                let mut balance = 0;
+                for (offset, ch) in s.char_indices() {
+                    if offset != 0 && balance == 0 {
+                        balance = offset;
+                        break;
+                    }
+
+                    if ch == '[' {
+                        balance += 1;
+                    } else if ch == ']' {
+                        balance -= 1;
+                    }
+                }
+                balance
+            };
+            let s = &s[1..(balance - 1)];
+            // low..top
+            let splits: Vec<_> = s.split(';').collect();
+            let bounds: Vec<_> = splits[0].split("..").collect();
+            Ok(SNLType::Array(SNLTypeArray {
+                base: SNLBaseType::from_str(splits[1])?,
+                lower_bound: usize::from_str(bounds[0]).unwrap(),
+                upper_bound: usize::from_str(bounds[1]).unwrap(),
+            }))
+        } else if s.starts_with("{") {
+            unimplemented!()
+        } else if s.starts_with("#") {
+            let (_, s) = s.split_at(1);
+            Ok(SNLType::Others(s.to_owned()))
+        } else {
+            unreachable!()
+        }
+    }
+}
+
+#[derive(Debug, Serialize, PartialEq)]
 pub struct SNLTypeArray {
     pub base: SNLBaseType,
     pub lower_bound: usize,
@@ -184,7 +254,7 @@ impl ToString for SNLTypeArray {
 
 pub type SNLTypeRecord = Vec<TypedIdentifiers>;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct TypedIdentifiers {
     pub type_name: SNLType,
     pub identifiers: PositionalVec<String>,
@@ -282,11 +352,13 @@ pub struct VariableRepresent {
 #[cfg(test)]
 mod tests {
     use crate::models::{SNLType, SNLTypeArray, SNLBaseType, TypedIdentifiers, Positional};
+    use std::str::FromStr;
 
     #[test]
-    fn test_type_signature() {
-        assert_eq!(SNLType::Integer.to_string(), "|integer");
-        assert_eq!(SNLType::Char.to_string(), "|char");
+    fn test_type_to_signature() {
+        assert_eq!(SNLType::Integer.to_string(), "integer");
+        assert_eq!(SNLType::Char.to_string(), "char");
+        assert_eq!(SNLType::Others("others".to_owned()).to_string(), "#others");
         assert_eq!(SNLType::Array(SNLTypeArray {
             base: SNLBaseType::Integer,
             lower_bound: 0,
@@ -298,7 +370,18 @@ mod tests {
                 identifiers: vec![Positional::dump("a".to_owned()), Positional::dump("c".to_owned())],
             },
             TypedIdentifiers { type_name: SNLType::Integer, identifiers: vec![Positional::dump("b".to_owned())] },
-        ]).to_string(), "{a,b,c,:|integer;}");
-        assert_eq!(SNLType::Others("others".to_owned()).to_string(), "#others");
+        ]).to_string(), "{a,b,c:integer}");
+    }
+
+    #[test]
+    fn test_type_from_signature() {
+        assert_eq!(SNLType::Integer, SNLType::from_str("integer").unwrap());
+        assert_eq!(SNLType::Char, SNLType::from_str("char").unwrap());
+        assert_eq!(SNLType::Others("test".to_owned()), SNLType::from_str("#test").unwrap());
+        assert_eq!(SNLType::Array(SNLTypeArray {
+            base: SNLBaseType::Integer,
+            lower_bound: 0,
+            upper_bound: 10,
+        }), SNLType::from_str("[0..10;integer]").unwrap());
     }
 }

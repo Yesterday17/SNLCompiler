@@ -12,7 +12,7 @@ pub enum Error {
     /// Variable type `got` is different from `expected`
     ///
     /// `(got, expect)`
-    TypeMismatch(String, String),
+    UncompatableType(String, String),
 
     /// Invalid array, for example, lower bound is larger than higher bound
     InvalidArrayDefinition,
@@ -20,6 +20,11 @@ pub enum Error {
     ///
     /// `(index, low, high)`
     ArrayIndexOutbound(u32, u32, u32),
+    /// Unexpected array index
+    UnexpectedArrayIndex,
+
+    /// Field is only available on Records
+    UnexpectedField,
 
     /// Different types between asssigner and assignee
     ///
