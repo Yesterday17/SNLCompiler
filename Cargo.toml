@@ -2,6 +2,7 @@
 members = [
     "snl-lexer",
     "snl-rdp",
+    "snl-semantic",
     "snl-utils",
     "snlc"
 ]

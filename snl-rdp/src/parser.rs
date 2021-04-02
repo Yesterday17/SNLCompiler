@@ -1,9 +1,7 @@
 use snl_lexer::token::{Token, TokenType};
 use snl_utils::Tokens;
 use crate::models::*;
-use std::collections::HashMap;
 use std::str::FromStr;
-use std::rc::Rc;
 
 pub struct Parser {
     inner: Tokens,
@@ -63,15 +61,15 @@ impl Parser {
         })
     }
 
-    fn parse_declare_type(&self) -> Result<HashMap<String, SNLType>, String> {
-        let mut declare = HashMap::new();
+    fn parse_declare_type(&self) -> Result<Vec<TypeDeclare>, String> {
+        let mut declare = Vec::new();
         self.inner.take(TokenType::Type)?;
         loop {
-            let name = self.inner.take(TokenType::Identifer)?;
+            let name = self.inner.take(TokenType::Identifer)?.image.clone();
             self.inner.take(TokenType::Equal)?;
             let inner_type = self.parse_type_name(true)?;
             self.inner.take(TokenType::Semicolon)?;
-            declare.insert(name.image.clone(), inner_type);
+            declare.push(TypeDeclare { base: inner_type, name });
             if TokenType::Identifer != self.inner.current() {
                 break;
             }
@@ -79,16 +77,14 @@ impl Parser {
         Ok(declare)
     }
 
-    fn parse_declare_var(&self) -> Result<HashMap<String, Rc<SNLType>>, String> {
-        let mut result = HashMap::new();
+    fn parse_declare_var(&self) -> Result<Vec<VariableDeclare>, String> {
+        let mut result = Vec::new();
         self.inner.take(TokenType::Var)?;
         loop {
-            let type_name = Rc::new(self.parse_type_name(true)?);
+            let type_name = self.parse_type_name(true)?;
             let ids = self.parse_identifier_list()?;
             self.inner.take(TokenType::Semicolon)?;
-            for id in ids {
-                result.insert(id, type_name.clone());
-            }
+            result.push(VariableDeclare { base: type_name, variables: ids });
 
             if self.inner.current() == TokenType::Procedure || self.inner.current() == TokenType::Begin {
                 break;
@@ -97,8 +93,8 @@ impl Parser {
         Ok(result)
     }
 
-    fn parse_declare_procedure(&self) -> Result<HashMap<String, ProcedureDeclare>, String> {
-        let mut result = HashMap::new();
+    fn parse_declare_procedure(&self) -> Result<Vec<ProcedureDeclare>, String> {
+        let mut result = Vec::new();
         loop {
             self.inner.take(TokenType::Procedure)?;
             let name = self.inner.take(TokenType::Identifer)?.image.clone();
@@ -108,7 +104,8 @@ impl Parser {
             self.inner.take(TokenType::Semicolon)?;
             let declare = self.parse_declare_part()?;
             let body = self.parse_program_body()?;
-            result.insert(name, ProcedureDeclare {
+            result.push(ProcedureDeclare {
+                name,
                 params,
                 declare: Box::new(declare),
                 body,

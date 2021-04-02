@@ -75,5 +75,6 @@ fn main() {
     };
     if mode == "parse" {
         println!("{}", serde_json::to_string(&ast).unwrap());
+        exit(0);
     }
 }
