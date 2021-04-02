@@ -1,6 +1,7 @@
 use clap::{App, Arg};
 use std::io::Read;
 use std::process::exit;
+use snl_semantic::Semantic;
 
 fn main() {
     let matches = App::new("SNL Compiler")
@@ -77,4 +78,8 @@ fn main() {
         println!("{}", serde_json::to_string(&ast).unwrap());
         exit(0);
     }
+
+    assert_eq!(mode, "semantic");
+    let mut s = Semantic::new(ast);
+    s.analyze();
 }
