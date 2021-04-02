@@ -26,6 +26,7 @@ fn main() {
             .takes_value(true)
             // Recursive descent parser or LL(1) parser
             .possible_values(&["rdp-rs", "ll1-rs", "rdp-c", "ll1-c"])
+            .default_value("rdp-rs")
         )
         .arg(Arg::with_name("filename")
             .required(true)
@@ -64,9 +65,15 @@ fn main() {
         exit(0);
     }
 
-    let parser = snl_rdp::Parser::new(tokens);
-    let _ast = parser.parse().expect("Failed to parse");
+    let ast = match matches.value_of("parser") {
+        Some("rdp-rs") => {
+            let parser = snl_rdp::Parser::new(tokens);
+            parser.parse().expect("Failed to parse")
+        }
+        Some(_) => unimplemented!(),
+        None => panic!("no parser specified")
+    };
     if mode == "parse" {
-        // TODO
+        println!("{:#?}", ast);
     }
 }
