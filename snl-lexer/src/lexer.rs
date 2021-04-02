@@ -58,11 +58,12 @@ pub fn read_tokens(input: &str) -> Result<Vec<Token>, String> {
                 } else if ch == '.' {
                     state = LexerState::InputDot;
                 } else if ch == '{' {
+                    image.pop();
                     state = LexerState::Comment;
                 } else {
                     tokens.push(Token {
                         token_type: TokenType::from_str(&image)?,
-                        image: image,
+                        image,
                         line: start_line,
                         column: start_column,
                     });

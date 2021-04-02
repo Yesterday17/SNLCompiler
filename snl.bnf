@@ -96,14 +96,13 @@ Statement            ::= ConditionalStatement
                         | IDENTIFIER AssCall;
 AssCall              ::= AssignmentRest | CallStatementRest;
 AssignmentRest       ::= VariMore ASSIGN Exp;
-ConditionalStatement ::= IF RelExp THEN StmList ELSE StmList FI;
-LoopStatement        ::= WHILE RelExp DO StmList ENDWH;
+ConditionalStatement ::= IF RelExp THEN StatementList ELSE StatementList FI;
+LoopStatement        ::= WHILE RelExp DO StatementList ENDWH;
 InputStatement       ::= READ BR_OPEN IDENTIFIER BR_CLOSE;
 OutputStatement      ::= WRITE BR_OPEN Exp BR_CLOSE;
 ReturnStatement      ::= RETURN BR_OPEN Exp BR_CLOSE;
 CallStatementRest    ::= BR_OPEN ( Exp ( COMMA Exp )* )? BR_CLOSE;
-RelExp               ::= Exp OtherRelE;
-OtherRelE            ::= CmdOp Exp;
+RelExp               ::= Exp CmdOp Exp;
 Exp                  ::= Term ( AddOp Exp )?;
 Term                 ::= Factor ( MultOp Term )?;
 Factor               ::= BR_OPEN Exp BR_CLOSE
@@ -111,9 +110,8 @@ Factor               ::= BR_OPEN Exp BR_CLOSE
                        | Variable;
 Variable             ::= IDENTIFIER VariMore;
 VariMore             ::= SQBR_OPEN Exp SQBR_CLOSE
-                       | DOT FieldVar
+                       | DOT IDENTIFIER ( SQBR_OPEN Exp SQBR_CLOSE )?
                        |;
-FieldDecList         ::= IDENTIFIER ( SQBR_OPEN Exp SQBR_CLOSE )?;
 CmdOp                ::= LT | EQ;
 AddOp                ::= ADD | MINUS;
 MultOp               ::= MUL | DIV;
