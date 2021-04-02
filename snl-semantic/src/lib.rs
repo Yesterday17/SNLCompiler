@@ -1,17 +1,17 @@
 use crate::symbol::SymbolTable;
 use snl_rdp::Program;
-use snl_rdp::models::ProgramDeclare;
+use snl_rdp::models::{ProgramDeclare, ASTNode};
 
 mod error;
 mod symbol;
 
 pub struct Semantic {
-    ast: snl_rdp::Program,
+    ast: ASTNode<Program>,
     symbols: SymbolTable<String>,
 }
 
 impl Semantic {
-    pub fn new(ast: Program) -> Self {
+    pub fn new(ast: ASTNode<Program>) -> Self {
         Semantic { ast, symbols: SymbolTable::new() }
     }
 

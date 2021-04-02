@@ -1,4 +1,49 @@
 use serde::Serialize;
+use std::ops::Deref;
+use snl_lexer::token::Token;
+
+#[derive(Debug, Serialize)]
+pub struct ASTNode<T> {
+    pub line: u32,
+    pub column: u32,
+    inner: T,
+}
+
+impl<T> ASTNode<T> {
+    pub fn new(line: u32, column: u32, inner: T) -> Self {
+        Self {
+            line,
+            column,
+            inner,
+        }
+    }
+
+    pub fn from_position((line, column): (u32, u32), inner: T) -> Self {
+        ASTNode::new(line, column, inner)
+    }
+
+    pub fn from_token(token: &Token, inner: T) -> Self {
+        ASTNode::new(token.line, token.column, inner)
+    }
+
+    pub fn into_inner(self) -> T {
+        self.inner
+    }
+
+    pub fn position(&self) -> (u32, u32) {
+        (self.line, self.column)
+    }
+}
+
+impl<T> Deref for ASTNode<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+pub type ASTNodeVec<T> = Vec<ASTNode<T>>;
 
 #[derive(Debug, Serialize)]
 pub struct Program {
@@ -9,14 +54,14 @@ pub struct Program {
 
 #[derive(Debug, Serialize)]
 pub struct ProgramDeclare {
-    pub type_declare: Vec<TypeDeclare>,
-    pub variable_declare: Vec<VariableDeclare>,
-    pub procedure_declare: Vec<ProcedureDeclare>,
+    pub type_declare: ASTNodeVec<TypeDeclare>,
+    pub variable_declare: ASTNodeVec<VariableDeclare>,
+    pub procedure_declare: ASTNodeVec<ProcedureDeclare>,
 }
 
 #[derive(Debug, Serialize)]
 pub struct TypeDeclare {
-    pub base: SNLType,
+    pub base: ASTNode<SNLType>,
     pub name: String,
 }
 
@@ -29,7 +74,7 @@ pub struct VariableDeclare {
 #[derive(Debug, Serialize)]
 pub struct ProcedureDeclare {
     pub name: String,
-    pub params: Vec<Param>,
+    pub params: ASTNodeVec<Param>,
     pub declare: Box<ProgramDeclare>,
     pub body: StatementList,
 }

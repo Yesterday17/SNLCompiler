@@ -14,25 +14,25 @@ impl Parser {
         }
     }
 
-    pub fn parse(&self) -> Result<Program, String> {
+    pub fn parse(&self) -> Result<ASTNode<Program>, String> {
         self.parse_program()
     }
 
-    fn parse_program(&self) -> Result<Program, String> {
+    fn parse_program(&self) -> Result<ASTNode<Program>, String> {
         let name = self.parse_program_head()?;
         let declare = self.parse_declare_part()?;
         let body = self.parse_program_body()?;
-        Ok(Program {
-            name,
+        Ok(ASTNode::from_position(name.position(), Program {
+            name: name.into_inner(),
             declare,
             body,
-        })
+        }))
     }
 
-    fn parse_program_head(&self) -> Result<String, String> {
-        self.inner.take(TokenType::Program)?;
+    fn parse_program_head(&self) -> Result<ASTNode<String>, String> {
+        let program = self.inner.take(TokenType::Program)?;
         let program_name = self.inner.take(TokenType::Identifer)?.image.clone();
-        Ok(program_name)
+        Ok(ASTNode::from_token(program, program_name))
     }
 
     fn parse_declare_part(&self) -> Result<ProgramDeclare, String> {
@@ -61,15 +61,18 @@ impl Parser {
         })
     }
 
-    fn parse_declare_type(&self) -> Result<Vec<TypeDeclare>, String> {
+    fn parse_declare_type(&self) -> Result<Vec<ASTNode<TypeDeclare>>, String> {
         let mut declare = Vec::new();
         self.inner.take(TokenType::Type)?;
         loop {
-            let name = self.inner.take(TokenType::Identifer)?.image.clone();
+            let name = self.inner.take(TokenType::Identifer)?;
             self.inner.take(TokenType::Equal)?;
             let inner_type = self.parse_type_name(true)?;
             self.inner.take(TokenType::Semicolon)?;
-            declare.push(TypeDeclare { base: inner_type, name });
+            declare.push(ASTNode::from_token(name, TypeDeclare {
+                base: inner_type,
+                name: name.image.clone(),
+            }));
             if TokenType::Identifer != self.inner.current() {
                 break;
             }
@@ -77,14 +80,20 @@ impl Parser {
         Ok(declare)
     }
 
-    fn parse_declare_var(&self) -> Result<Vec<VariableDeclare>, String> {
-        let mut result = Vec::new();
+    fn parse_declare_var(&self) -> Result<ASTNodeVec<VariableDeclare>, String> {
+        let mut result = ASTNodeVec::new();
         self.inner.take(TokenType::Var)?;
         loop {
             let type_name = self.parse_type_name(true)?;
             let ids = self.parse_identifier_list()?;
             self.inner.take(TokenType::Semicolon)?;
-            result.push(VariableDeclare { base: type_name, variables: ids });
+            result.push(ASTNode::from_position(
+                type_name.position(),
+                VariableDeclare {
+                    base: type_name.into_inner(),
+                    variables: ids,
+                },
+            ));
 
             if self.inner.current() == TokenType::Procedure || self.inner.current() == TokenType::Begin {
                 break;
@@ -93,23 +102,23 @@ impl Parser {
         Ok(result)
     }
 
-    fn parse_declare_procedure(&self) -> Result<Vec<ProcedureDeclare>, String> {
-        let mut result = Vec::new();
+    fn parse_declare_procedure(&self) -> Result<ASTNodeVec<ProcedureDeclare>, String> {
+        let mut result = ASTNodeVec::new();
         loop {
             self.inner.take(TokenType::Procedure)?;
-            let name = self.inner.take(TokenType::Identifer)?.image.clone();
+            let name = self.inner.take(TokenType::Identifer)?;
             self.inner.take(TokenType::BracketOpen)?;
             let params = self.parse_param_list()?;
             self.inner.take(TokenType::BracketClose)?;
             self.inner.take(TokenType::Semicolon)?;
             let declare = self.parse_declare_part()?;
             let body = self.parse_program_body()?;
-            result.push(ProcedureDeclare {
-                name,
+            result.push(ASTNode::from_token(name, ProcedureDeclare {
+                name: name.image.clone(),
                 params,
                 declare: Box::new(declare),
                 body,
-            });
+            }));
             if TokenType::Procedure != self.inner.current() {
                 break;
             }
@@ -117,31 +126,32 @@ impl Parser {
         Ok(result)
     }
 
-    fn parse_type_name(&self, full: bool) -> Result<SNLType, String> {
+    fn parse_type_name(&self, full: bool) -> Result<ASTNode<SNLType>, String> {
         let next = self.inner.current();
+        let next_pos = (self.inner.current_token().line, self.inner.current_token().column);
         match next {
             TokenType::Integer => {
                 self.inner.move_next();
-                return Ok(SNLType::Integer);
+                return Ok(ASTNode::from_position(next_pos, SNLType::Integer));
             }
             TokenType::Char => {
                 self.inner.move_next();
-                return Ok(SNLType::Char);
+                return Ok(ASTNode::from_position(next_pos, SNLType::Char));
             }
             TokenType::Array => {
-                return Ok(SNLType::Array(self.parse_array_type()?));
+                return Ok(ASTNode::from_position(next_pos, SNLType::Array(self.parse_array_type()?)));
             }
             _ => {}
         }
         if full {
             match next {
                 TokenType::Record => {
-                    return Ok(SNLType::Record(self.parse_record_type()?));
+                    return Ok(ASTNode::from_position(next_pos, SNLType::Record(self.parse_record_type()?)));
                 }
                 TokenType::Identifer => {
                     let name = self.inner.current_token().image.clone();
                     self.inner.move_next();
-                    return Ok(SNLType::Others(name));
+                    return Ok(ASTNode::from_position(next_pos, SNLType::Others(name)));
                 }
                 _ => {}
             }
@@ -181,7 +191,7 @@ impl Parser {
             let type_name = self.parse_type_name(false)?;
             let identifiers = self.parse_identifier_list()?;
             self.inner.take(TokenType::Semicolon)?;
-            records.push(TypeRecord { type_name, identifiers });
+            records.push(TypeRecord { type_name: type_name.into_inner(), identifiers });
 
             match self.inner.current() {
                 TokenType::Integer | TokenType::Char | TokenType::Array => {}
@@ -416,8 +426,8 @@ impl Parser {
         Ok(inner)
     }
 
-    fn parse_param_list(&self) -> Result<Vec<Param>, String> {
-        let mut result = Vec::new();
+    fn parse_param_list(&self) -> Result<ASTNodeVec<Param>, String> {
+        let mut result = ASTNodeVec::new();
         loop {
             if TokenType::BracketClose == self.inner.current() {
                 break;
@@ -431,7 +441,7 @@ impl Parser {
         Ok(result)
     }
 
-    fn parse_param(&self) -> Result<Param, String> {
+    fn parse_param(&self) -> Result<ASTNode<Param>, String> {
         let is_var = TokenType::Var == self.inner.current();
         if is_var {
             self.inner.move_next();
@@ -439,11 +449,11 @@ impl Parser {
 
         let type_name = self.parse_type_name(true)?;
         let identifiers = self.parse_identifier_list()?;
-        Ok(Param {
+        Ok(ASTNode::from_position(type_name.position(), Param {
             is_var,
-            type_name,
+            type_name: type_name.into_inner(),
             identifiers,
-        })
+        }))
     }
 
     fn parse_variable_visit(&self) -> Result<Option<VariableVisit>, String> {
