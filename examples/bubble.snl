@@ -14,9 +14,9 @@ begin
             if a[k+1] < a[k] then
                 t := a[k];
                 a[k] := a[k+1];
-                a[k+1] := t
+                a[k+1] := t;
             else
-                temp := 0
+                temp := 0;
             fi;
             k := k + 1;
         endwh;

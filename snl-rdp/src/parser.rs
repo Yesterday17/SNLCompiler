@@ -286,11 +286,14 @@ impl Parser {
     }
 
     fn parse_assign_statement(&self) -> Result<Statement, String> {
-        let name = self.inner.take(TokenType::Identifer)?.image.clone();
-        // TODO: varimore
+        let base = self.inner.take(TokenType::Identifer)?.image.clone();
+        let visit = self.parse_variable_visit()?;
         self.inner.take(TokenType::Assign)?;
         let value = self.parse_expression()?;
-        Ok(Statement::Assign(AssignStatement { name, value }))
+        Ok(Statement::Assign(AssignStatement {
+            variable: VariableRepresent { base, visit },
+            value,
+        }))
     }
 
     fn parse_relation_expression(&self) -> Result<RelationExpression, String> {
@@ -364,10 +367,9 @@ impl Parser {
                 ExpressionFactor::Constant(u32::from_str(num).unwrap())
             }
             TokenType::Identifer => {
-                let variable = self.inner.take(TokenType::Identifer)?.image.clone();
-                // TODO: varimore
-                // let more = self.parse_varimore()?;
-                ExpressionFactor::Variable(variable)
+                let base = self.inner.take(TokenType::Identifer)?.image.clone();
+                let visit = self.parse_variable_visit()?;
+                ExpressionFactor::Variable(VariableRepresent { base, visit })
             }
             _ => return Err(format!("unexpected factor token: {:?}", self.inner.current()))
         };
@@ -402,5 +404,24 @@ impl Parser {
             type_name,
             identifiers,
         })
+    }
+
+    fn parse_variable_visit(&self) -> Result<VariableVisit, String> {
+        let dot = if TokenType::Dot == self.inner.current() {
+            self.inner.take(TokenType::Dot)?;
+            Some(self.inner.take(TokenType::Identifer)?.image.clone())
+        } else {
+            None
+        };
+
+        let sqbr = if TokenType::SquareBracketOpen == self.inner.current() {
+            self.inner.take(TokenType::SquareBracketOpen)?;
+            let exp = self.parse_expression()?;
+            self.inner.take(TokenType::SquareBracketClose)?;
+            Some(Box::new(exp))
+        } else {
+            None
+        };
+        Ok(VariableVisit { dot, sqbr })
     }
 }

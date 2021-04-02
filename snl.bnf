@@ -95,7 +95,7 @@ Statement            ::= ConditionalStatement
                         | ReturnStatement
                         | IDENTIFIER AssCall;
 AssCall              ::= AssignmentRest | CallStatementRest;
-AssignmentRest       ::= VariMore ASSIGN Exp;
+AssignmentRest       ::= VariableVisit ASSIGN Exp;
 ConditionalStatement ::= IF RelExp THEN StatementList ELSE StatementList FI;
 LoopStatement        ::= WHILE RelExp DO StatementList ENDWH;
 InputStatement       ::= READ BR_OPEN IDENTIFIER BR_CLOSE;
@@ -108,10 +108,8 @@ Term                 ::= Factor ( MultOp Term )?;
 Factor               ::= BR_OPEN Exp BR_CLOSE
                        | INTC
                        | Variable;
-Variable             ::= IDENTIFIER VariMore;
-VariMore             ::= SQBR_OPEN Exp SQBR_CLOSE
-                       | DOT IDENTIFIER ( SQBR_OPEN Exp SQBR_CLOSE )?
-                       |;
+Variable             ::= IDENTIFIER VariableVisit;
+VariableVisit        ::= ( DOT IDENTIFIER )? ( SQBR_OPEN Exp SQBR_CLOSE )?;
 CmdOp                ::= LT | EQ;
 AddOp                ::= ADD | MINUS;
 MultOp               ::= MUL | DIV;

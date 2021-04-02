@@ -63,7 +63,7 @@ pub struct LoopStatement {
 }
 
 pub struct AssignStatement {
-    pub(crate) name: String,
+    pub(crate) variable: VariableRepresent,
     pub(crate) value: Expression,
 }
 
@@ -80,7 +80,7 @@ pub type ExpressionTerm = ExpressionTemplate<ExpressionFactor>;
 pub enum ExpressionFactor {
     Bracket(Box<Expression>),
     Constant(u32),
-    Variable(String),
+    Variable(VariableRepresent),
 }
 
 pub struct RelationExpression {
@@ -93,4 +93,14 @@ pub struct Param {
     pub(crate) is_var: bool,
     pub(crate) type_name: SNLType,
     pub(crate) identifiers: Vec<String>,
+}
+
+pub struct VariableVisit {
+    pub(crate) dot: Option<String>,
+    pub(crate) sqbr: Option<Box<Expression>>,
+}
+
+pub struct VariableRepresent {
+    pub(crate) base: String,
+    pub(crate) visit: VariableVisit,
 }
