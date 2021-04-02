@@ -10,7 +10,7 @@ fn main() {
             .required(true)
             .takes_value(true)
             .possible_values(&["lex", "parse", "semantic"])
-            .default_value("parse")
+            .default_value("semantic")
         )
         .arg(Arg::with_name("lexer")
             .long("lexer")
@@ -80,6 +80,6 @@ fn main() {
     }
 
     assert_eq!(mode, "semantic");
-    let mut s = Semantic::new(ast);
-    s.analyze();
+    let errors = Semantic::new(ast).analyze();
+    println!("{:?}", errors);
 }

@@ -44,16 +44,16 @@ BR_CLOSE             ::= ")";
 DOT                  ::= ".";
 DOT2                 ::= "..";
 
-###########################################
+//////////////////////////////////////////////////////
 
 Program              ::= ProgramHead DeclarePart ProgramBody;
 
-###########################################
+//////////////////////////////////////////////////////
 
 ProgramHead          ::= PROGRAM ProgramName;
 ProgramName          ::= IDENTIFIER;
 
-###########################################
+//////////////////////////////////////////////////////
 
 DeclarePart          ::= TypeDec VarDec ProcDec;
 
@@ -84,7 +84,7 @@ Param                ::= VAR? TypeName IdentifierList;
 ProcDecPart          ::= DeclarePart;
 ProcBody             ::= ProgramBody;
 
-###########################################
+//////////////////////////////////////////////////////
 
 ProgramBody          ::= BEGIN StatementList END;
 StatementList        ::= Statement ( SEMICOLON Statement )*

@@ -1,0 +1,30 @@
+{ This program contains lots of semantic errors }
+
+program program3
+type t1 = integer;
+     t2 = tnotexist; { Undefined Type }
+var  t1       t1;    { Duplicated Identifier }
+     integer  test1, test2;
+     char     ch;
+
+procedure proc(integer param1);
+  var integer param1    { Duplicated Identifier }
+            , param2;
+      char    param3;
+  begin
+    notexist := param1; { Invalid Assignee }
+    param3 := param2;   { Assign Type Mismatch }
+    param3 := 10        { Unexpected Type }
+  end
+
+procedure test1();      { Duplicated Identifier }
+  begin
+    test1()             { No error, though it will cause stack overflow }
+  end
+
+begin
+  proc();               { Call Parameter Count Mismatch }
+  proc(ch);             { Call Parameter Type Mismatch }
+  proc(0);
+  test1()               { Unexpected Type }
+end.

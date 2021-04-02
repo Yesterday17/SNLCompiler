@@ -5,6 +5,12 @@ pub struct SymbolTable<T> {
     inner: Vec<HashMap<String, T>>
 }
 
+impl<T> Default for SymbolTable<T> {
+    fn default() -> Self {
+        SymbolTable::new()
+    }
+}
+
 impl<T> SymbolTable<T> {
     pub fn new() -> Self {
         Self { inner: vec![HashMap::new()] }
