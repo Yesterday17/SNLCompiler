@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::rc::Rc;
 
 pub struct Program {
     pub(crate) name: String,
@@ -8,30 +9,36 @@ pub struct Program {
 
 pub struct ProgramDeclare {
     pub(crate) type_declare: HashMap<String, SNLType>,
-    pub(crate) variable_declare: HashMap<String, SNLType>,
+    pub(crate) variable_declare: HashMap<String, Rc<SNLType>>,
     pub(crate) procedure_declare: HashMap<String, ProcedureDeclare>,
 }
 
 #[repr(u8)]
-#[derive(Copy, Clone)]
 pub enum SNLBaseType {
     Integer,
     Char,
 }
 
-#[derive(Clone)]
 pub enum SNLType {
     Integer,
     Char,
-    /// base, low, top
     Array(SNLTypeArray),
-    /// TODO
-    Record(),
+    Record(SNLTypeRecord),
     Others(String),
 }
 
-#[derive(Clone)]
-pub struct SNLTypeArray(pub(crate) SNLBaseType, pub(crate) usize, pub(crate) usize);
+pub struct SNLTypeArray {
+    pub(crate) base: SNLBaseType,
+    pub(crate) lower_bound: usize,
+    pub(crate) upper_bound: usize,
+}
+
+pub type SNLTypeRecord = Vec<TypeRecord>;
+
+pub struct TypeRecord {
+    pub(crate) type_name: SNLType,
+    pub(crate) identifiers: Vec<String>,
+}
 
 pub struct ProcedureDeclare {
     pub(crate) params: Vec<Param>,
@@ -48,7 +55,7 @@ pub enum Statement {
     Output(Expression),
     Return(Expression),
     Assign(AssignStatement),
-    Call(),
+    Call(CallStatement),
 }
 
 pub struct ConditionalStatement {
@@ -65,6 +72,11 @@ pub struct LoopStatement {
 pub struct AssignStatement {
     pub(crate) variable: VariableRepresent,
     pub(crate) value: Expression,
+}
+
+pub struct CallStatement {
+    pub(crate) name: String,
+    pub(crate) params: Vec<Expression>,
 }
 
 pub struct ExpressionTemplate<Next> {

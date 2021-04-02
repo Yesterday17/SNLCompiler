@@ -3,6 +3,7 @@ use snl_utils::Tokens;
 use crate::models::*;
 use std::collections::HashMap;
 use std::str::FromStr;
+use std::rc::Rc;
 
 pub struct Parser {
     inner: Tokens,
@@ -68,7 +69,7 @@ impl Parser {
         loop {
             let name = self.inner.take(TokenType::Identifer)?;
             self.inner.take(TokenType::Equal)?;
-            let inner_type = self.parse_type_name()?;
+            let inner_type = self.parse_type_name(true)?;
             self.inner.take(TokenType::Semicolon)?;
             declare.insert(name.image.clone(), inner_type);
             if TokenType::Identifer != self.inner.current() {
@@ -78,11 +79,11 @@ impl Parser {
         Ok(declare)
     }
 
-    fn parse_declare_var(&self) -> Result<HashMap<String, SNLType>, String> {
+    fn parse_declare_var(&self) -> Result<HashMap<String, Rc<SNLType>>, String> {
         let mut result = HashMap::new();
         self.inner.take(TokenType::Var)?;
         loop {
-            let type_name = self.parse_type_name()?;
+            let type_name = Rc::new(self.parse_type_name(true)?);
             let ids = self.parse_identifier_list()?;
             self.inner.take(TokenType::Semicolon)?;
             for id in ids {
@@ -119,31 +120,36 @@ impl Parser {
         Ok(result)
     }
 
-    fn parse_type_name(&self) -> Result<SNLType, String> {
+    fn parse_type_name(&self, full: bool) -> Result<SNLType, String> {
         let next = self.inner.current();
         match next {
             TokenType::Integer => {
                 self.inner.move_next();
-                Ok(SNLType::Integer)
+                return Ok(SNLType::Integer);
             }
             TokenType::Char => {
                 self.inner.move_next();
-                Ok(SNLType::Char)
+                return Ok(SNLType::Char);
             }
             TokenType::Array => {
-                Ok(SNLType::Array(self.parse_array_type()?))
+                return Ok(SNLType::Array(self.parse_array_type()?));
             }
-            TokenType::Record => {
-                // TODO
-                unimplemented!();
-            }
-            TokenType::Identifer => {
-                let name = self.inner.current_token().image.clone();
-                self.inner.move_next();
-                Ok(SNLType::Others(name))
-            }
-            _ => Err(format!("unexpected token {:?}", next))
+            _ => {}
         }
+        if full {
+            match next {
+                TokenType::Record => {
+                    return Ok(SNLType::Record(self.parse_record_type()?));
+                }
+                TokenType::Identifer => {
+                    let name = self.inner.current_token().image.clone();
+                    self.inner.move_next();
+                    return Ok(SNLType::Others(name));
+                }
+                _ => {}
+            }
+        }
+        Err(format!("unexpected token {:?}", next))
     }
 
     fn parse_array_type(&self) -> Result<SNLTypeArray, String> {
@@ -164,7 +170,29 @@ impl Parser {
             }
         };
         self.inner.move_next();
-        Ok(SNLTypeArray(base, usize::from_str(low).unwrap(), usize::from_str(top).unwrap()))
+        Ok(SNLTypeArray {
+            base,
+            lower_bound: usize::from_str(low).unwrap(),
+            upper_bound: usize::from_str(top).unwrap(),
+        })
+    }
+
+    fn parse_record_type(&self) -> Result<SNLTypeRecord, String> {
+        let mut records = Vec::new();
+        self.inner.take(TokenType::Record)?;
+        loop {
+            let type_name = self.parse_type_name(false)?;
+            let identifiers = self.parse_identifier_list()?;
+            self.inner.take(TokenType::Semicolon)?;
+            records.push(TypeRecord { type_name, identifiers });
+
+            match self.inner.current() {
+                TokenType::Integer | TokenType::Char | TokenType::Array => {}
+                _ => break,
+            }
+        }
+        self.inner.take(TokenType::End)?;
+        Ok(records)
     }
 
     fn parse_identifier_list(&self) -> Result<Vec<String>, String> {
@@ -282,7 +310,24 @@ impl Parser {
     }
 
     fn parse_call_statement(&self) -> Result<Statement, String> {
-        unimplemented!()
+        let mut params = Vec::new();
+        let name = self.inner.take(TokenType::Identifer)?.image.clone();
+        self.inner.take(TokenType::BracketOpen)?;
+        loop {
+            if TokenType::BracketClose == self.inner.current() {
+                break;
+            }
+            if params.len() != 0 {
+                self.inner.take(TokenType::Comma)?;
+            }
+            let param = self.parse_expression()?;
+            params.push(param);
+        }
+        self.inner.take(TokenType::BracketClose)?;
+        Ok(Statement::Call(CallStatement {
+            name,
+            params,
+        }))
     }
 
     fn parse_assign_statement(&self) -> Result<Statement, String> {
@@ -317,7 +362,6 @@ impl Parser {
         })
     }
 
-    // FIXME: type
     fn parse_expression(&self) -> Result<Expression, String> {
         let left = self.parse_term()?;
         let (op, right) = match self.inner.current() {
@@ -397,7 +441,7 @@ impl Parser {
             self.inner.move_next();
         }
 
-        let type_name = self.parse_type_name()?;
+        let type_name = self.parse_type_name(true)?;
         let identifiers = self.parse_identifier_list()?;
         Ok(Param {
             is_var,
