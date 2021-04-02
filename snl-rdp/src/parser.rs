@@ -378,30 +378,32 @@ impl Parser {
                 let op = self.inner.current_token().image.clone();
                 self.inner.move_next();
                 let right = self.parse_expression()?;
-                (Some(op), Some(Box::new(right)))
+                (Some(op), Some(Positional::from_position(right.left.position(), Box::new(right))))
             }
             _ => { (None, None) }
         };
         Ok(Expression {
-            left,
+            left: Positional::from_position(left.left.position(), left),
             op,
             right,
         })
     }
 
     fn parse_term(&self) -> Result<ExpressionTerm, String> {
+        let left_token = self.inner.current_token();
         let left = self.parse_factor()?;
         let (op, right) = match self.inner.current() {
             TokenType::Multiply | TokenType::Divide => {
                 let op = self.inner.current_token().image.clone();
                 self.inner.move_next();
+                let right_token = self.inner.current_token();
                 let right = self.parse_term()?;
-                (Some(op), Some(Box::new(right)))
+                (Some(op), Some(Positional::from_token(right_token, Box::new(right))))
             }
             _ => { (None, None) }
         };
         Ok(ExpressionTerm {
-            left,
+            left: Positional::from_token(left_token, left),
             op,
             right,
         })

@@ -152,8 +152,8 @@ impl Semantic {
                         }
                     }
                 }
-                Statement::Output(_) => {}
-                Statement::Return(_) => {}
+                Statement::Output(output) => self.analyze_expression(output),
+                Statement::Return(ret) => self.analyze_expression(ret),
                 Statement::Assign(_) => {}
                 Statement::Call(call) => {
                     // look for symbol in table
@@ -208,5 +208,9 @@ impl Semantic {
             }
             _ => {}
         }
+    }
+
+    fn analyze_expression(&self, exp: &Expression) {
+        //
     }
 }

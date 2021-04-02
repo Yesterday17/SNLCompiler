@@ -179,9 +179,9 @@ impl CallStatement {
 
 #[derive(Debug, Serialize)]
 pub struct ExpressionTemplate<Next> {
-    pub left: Next,
+    pub left: Positional<Next>,
     pub op: Option<String>,
-    pub right: Option<Box<Self>>,
+    pub right: Option<Positional<Box<Self>>>,
 }
 
 pub type Expression = ExpressionTemplate<ExpressionTerm>;
