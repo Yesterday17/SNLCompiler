@@ -156,7 +156,16 @@ impl Semantic {
                 Statement::Return(ret) => {
                     self.analyze_expression(ret);
                 }
-                Statement::Assign(_) => {}
+                Statement::Assign(assign) => {
+                    let left_type = self.analyze_variable_represent(&assign.variable);
+                    let right_type = self.analyze_expression(&assign.value);
+                    if left_type != right_type {
+                        self.errors.borrow_mut().push(Positional::from_position(
+                            (0, 0), // FIXME
+                            Error::AssignTypeMismatch(right_type, left_type),
+                        ))
+                    }
+                }
                 Statement::Call(call) => {
                     // look for symbol in table
                     match self.symbols.borrow().query(call.name()) {
@@ -250,104 +259,106 @@ impl Semantic {
         match exp {
             ExpressionFactor::Bracket(exp) => self.analyze_expression(exp),
             ExpressionFactor::Constant(_) => SNLType::Integer.to_string(),
-            ExpressionFactor::Variable(repr) => {
-                match self.symbols.borrow().query(&repr.base) {
-                    Some(symbol) => {
-                        match symbol {
-                            Symbol::Variable(current_type) => {
-                                match &repr.visit {
-                                    Some(visit) => {
-                                        // record field
-                                        let current_type = match &visit.dot {
-                                            Some(field) => {
-                                                if !current_type.starts_with("{") {
-                                                    self.errors.borrow_mut().push(Positional::from_position(
-                                                        (0, 0),// FIXME
-                                                        Error::UnexpectedField,
-                                                    ));
-                                                    return "".to_owned();
-                                                }
+            ExpressionFactor::Variable(repr) => self.analyze_variable_represent(repr),
+        }
+    }
 
-                                                let mut type_got = String::new();
-                                                let parts: Vec<_> = current_type[1..(current_type.len() - 1)].split(";").collect();
-                                                for p in parts {
-                                                    let fields: Vec<_> = p.split(":").collect();
-                                                    let variables: Vec<_> = fields[0].split(",").collect();
-                                                    if variables.contains(&field.as_str()) {
-                                                        type_got += fields[1];
-                                                        break;
-                                                    }
-                                                }
-                                                if type_got == "" {
-                                                    self.errors.borrow_mut().push(Positional::from_position(
-                                                        (0, 0),// FIXME
-                                                        Error::UndefinedRecordField(field.to_owned()),
-                                                    ));
-                                                    return type_got;
-                                                }
-                                                type_got
+    fn analyze_variable_represent(&self, repr: &VariableRepresent) -> String {
+        match self.symbols.borrow().query(&repr.base) {
+            Some(symbol) => {
+                match symbol {
+                    Symbol::Variable(current_type) => {
+                        match &repr.visit {
+                            Some(visit) => {
+                                // record field
+                                let current_type = match &visit.dot {
+                                    Some(field) => {
+                                        if !current_type.starts_with("{") {
+                                            self.errors.borrow_mut().push(Positional::from_position(
+                                                (0, 0),// FIXME
+                                                Error::UnexpectedField,
+                                            ));
+                                            return "".to_owned();
+                                        }
+
+                                        let mut type_got = String::new();
+                                        let parts: Vec<_> = current_type[1..(current_type.len() - 1)].split(";").collect();
+                                        for p in parts {
+                                            let fields: Vec<_> = p.split(":").collect();
+                                            let variables: Vec<_> = fields[0].split(",").collect();
+                                            if variables.contains(&field.as_str()) {
+                                                type_got += fields[1];
+                                                break;
                                             }
-                                            None => current_type.clone(),
-                                        };
-                                        // array index
-                                        match &visit.sqbr {
-                                            Some(index) => {
-                                                // need array type
-                                                if !current_type.starts_with("[") {
-                                                    self.errors.borrow_mut().push(Positional::from_position(
-                                                        (0, 0),// FIXME
-                                                        Error::UnexpectedArrayIndex,
-                                                    ));
-                                                    return "".to_owned();
-                                                }
+                                        }
+                                        if type_got == "" {
+                                            self.errors.borrow_mut().push(Positional::from_position(
+                                                (0, 0),// FIXME
+                                                Error::UndefinedRecordField(field.to_owned()),
+                                            ));
+                                            return type_got;
+                                        }
+                                        type_got
+                                    }
+                                    None => current_type.clone(),
+                                };
+                                // array index
+                                match &visit.sqbr {
+                                    Some(index) => {
+                                        // need array type
+                                        if !current_type.starts_with("[") {
+                                            self.errors.borrow_mut().push(Positional::from_position(
+                                                (0, 0),// FIXME
+                                                Error::UnexpectedArrayIndex,
+                                            ));
+                                            return "".to_owned();
+                                        }
 
-                                                // index type
-                                                let index_type = self.analyze_expression(index);
-                                                if index_type != "integer" {
-                                                    self.errors.borrow_mut().push(Positional::from_position(
-                                                        (0, 0),// FIXME
-                                                        Error::UncompatableType(index_type, "integer".to_owned()),
-                                                    ));
-                                                    return "".to_owned();
-                                                }
+                                        // index type
+                                        let index_type = self.analyze_expression(index);
+                                        if index_type != "integer" {
+                                            self.errors.borrow_mut().push(Positional::from_position(
+                                                (0, 0),// FIXME
+                                                Error::UncompatableType(index_type, "integer".to_owned()),
+                                            ));
+                                            return "".to_owned();
+                                        }
 
-                                                // return type
-                                                if current_type.ends_with("integer]") {
-                                                    "integer".to_owned()
-                                                } else {
-                                                    "char".to_owned()
-                                                }
-                                            }
-                                            None => current_type,
+                                        // return type
+                                        if current_type.ends_with("integer]") {
+                                            "integer".to_owned()
+                                        } else {
+                                            "char".to_owned()
                                         }
                                     }
-                                    None => current_type.to_owned()
+                                    None => current_type,
                                 }
                             }
-                            Symbol::Procedure() => {
-                                self.errors.borrow_mut().push(Positional::from_position(
-                                    (0, 0),// FIXME
-                                    Error::UncompatableType("Variable".to_string(), "Procedure".to_owned()),
-                                ));
-                                "".to_owned()
-                            }
-                            Symbol::Type(ty) => {
-                                self.errors.borrow_mut().push(Positional::from_position(
-                                    (0, 0),// FIXME
-                                    Error::UncompatableType("Variable".to_string(), ty.to_owned()),
-                                ));
-                                "".to_owned()
-                            }
+                            None => current_type.to_owned()
                         }
                     }
-                    None => {
+                    Symbol::Procedure() => {
                         self.errors.borrow_mut().push(Positional::from_position(
                             (0, 0),// FIXME
-                            Error::UndefinedIdentifier(repr.base.clone()),
+                            Error::UncompatableType("Variable".to_string(), "Procedure".to_owned()),
+                        ));
+                        "".to_owned()
+                    }
+                    Symbol::Type(ty) => {
+                        self.errors.borrow_mut().push(Positional::from_position(
+                            (0, 0),// FIXME
+                            Error::UncompatableType("Variable".to_string(), ty.to_owned()),
                         ));
                         "".to_owned()
                     }
                 }
+            }
+            None => {
+                self.errors.borrow_mut().push(Positional::from_position(
+                    (0, 0),// FIXME
+                    Error::UndefinedIdentifier(repr.base.clone()),
+                ));
+                "".to_owned()
             }
         }
     }

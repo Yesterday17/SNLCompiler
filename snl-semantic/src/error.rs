@@ -1,5 +1,3 @@
-use snl_rdp::models::SNLType;
-
 #[derive(Debug)]
 pub enum Error {
     /// Identifier with the same name exists at current tier
@@ -31,7 +29,7 @@ pub enum Error {
     /// Different types between asssigner and assignee
     ///
     /// `(got, expected)`
-    AssignTypeMismatch(SNLType, SNLType),
+    AssignTypeMismatch(String, String),
     /// Assignee can not accept any data
     InvalidAssignee,
 

@@ -14,9 +14,9 @@ procedure proc(integer param1);
             , proc;     { Duplicated Identifier }                 { implemented }
       char    param3;
   begin
-    notexist := param1; { Invalid Assignee }
-    param3 := param2;   { Assign Type Mismatch }
-    param3 := 10        { Unexpected Type }
+    notexist := param1; { Invalid Assignee }                      { implemented }
+    param3 := param2;   { Assign Type Mismatch }                  { implemented }
+    param3 := 10        { Assign Type Mismatch }                  { implemented }
   end
 
 procedure recordtest();
