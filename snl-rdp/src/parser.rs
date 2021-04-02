@@ -80,7 +80,7 @@ impl Parser {
         Ok(declare)
     }
 
-    fn parse_declare_var(&self) -> Result<PositionalVec<VariableDeclare>, String> {
+    fn parse_declare_var(&self) -> Result<PositionalVec<TypedIdentifiers>, String> {
         let mut result = PositionalVec::new();
         self.inner.take(TokenType::Var)?;
         loop {
@@ -89,9 +89,9 @@ impl Parser {
             self.inner.take(TokenType::Semicolon)?;
             result.push(Positional::from_position(
                 type_name.position(),
-                VariableDeclare {
-                    base: type_name.into_inner(),
-                    variables: ids,
+                TypedIdentifiers {
+                    type_name: type_name.into_inner(),
+                    identifiers: ids,
                 },
             ));
 
@@ -191,7 +191,7 @@ impl Parser {
             let type_name = self.parse_type_name(false)?;
             let identifiers = self.parse_identifier_list()?;
             self.inner.take(TokenType::Semicolon)?;
-            records.push(TypeRecord { type_name: type_name.into_inner(), identifiers });
+            records.push(TypedIdentifiers { type_name: type_name.into_inner(), identifiers });
 
             match self.inner.current() {
                 TokenType::Integer | TokenType::Char | TokenType::Array => {}
@@ -202,8 +202,8 @@ impl Parser {
         Ok(records)
     }
 
-    fn parse_identifier_list(&self) -> Result<Vec<String>, String> {
-        let mut ids = Vec::new();
+    fn parse_identifier_list(&self) -> Result<PositionalVec<String>, String> {
+        let mut ids = PositionalVec::new();
         let mut need_comma = false;
         loop {
             match self.inner.current() {
@@ -211,7 +211,10 @@ impl Parser {
                     if need_comma {
                         break;
                     } else {
-                        ids.push(self.inner.current_token().image.clone());
+                        ids.push(Positional::from_token(
+                            self.inner.current_token(),
+                            self.inner.current_token().image.clone(),
+                        ));
                         need_comma = true;
                         self.inner.move_next();
                     }
@@ -451,8 +454,10 @@ impl Parser {
         let identifiers = self.parse_identifier_list()?;
         Ok(Positional::from_position(type_name.position(), Param {
             is_var,
-            type_name: type_name.into_inner(),
-            identifiers,
+            inner: TypedIdentifiers {
+                type_name: type_name.into_inner(),
+                identifiers,
+            },
         }))
     }
 

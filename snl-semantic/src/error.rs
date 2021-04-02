@@ -26,4 +26,6 @@ pub enum Error {
     /// Procedure call parameter count mismatch
     CallParameterCountMismatch,
     InvalidBoolExpression,
+    /// Invalid array, for example, lower bound is larger than higher bound
+    InvalidArrayDefinition,
 }

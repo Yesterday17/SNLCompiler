@@ -3,13 +3,15 @@
 program program3
 type t1 = integer;
      t2 = tnotexist; { Undefined Type }
-var  t1       t1;    { Duplicated Identifier }
-     integer  test1, test2;
-     char     ch;
+var integer                  test1, test2;
+    char                     ch;
+    array [15..5] of integer t1; { Duplicated Identifier }
+                                 { Invalid Array Definition }
 
 procedure proc(integer param1);
   var integer param1    { Duplicated Identifier }
-            , param2;
+            , param2
+            , proc;     { Duplicated Identifier }
       char    param3;
   begin
     notexist := param1; { Invalid Assignee }

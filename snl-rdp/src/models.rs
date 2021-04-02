@@ -2,7 +2,7 @@ use serde::Serialize;
 use std::ops::Deref;
 use snl_lexer::token::Token;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct Positional<T> {
     pub line: u32,
     pub column: u32,
@@ -24,6 +24,10 @@ impl<T> Positional<T> {
 
     pub fn from_token(token: &Token, inner: T) -> Self {
         Positional::new(token.line, token.column, inner)
+    }
+
+    pub fn inner(&self) -> &T {
+        &self.inner
     }
 
     pub fn into_inner(self) -> T {
@@ -55,13 +59,13 @@ pub struct Program {
 #[derive(Debug, Serialize)]
 pub struct ProgramDeclare {
     pub type_declare: PositionalVec<TypeDeclare>,
-    pub variable_declare: PositionalVec<VariableDeclare>,
+    pub variable_declare: PositionalVec<TypedIdentifiers>,
     pub procedure_declare: PositionalVec<ProcedureDeclare>,
 }
 
 #[derive(Debug, Serialize)]
 pub struct TypeDeclare {
-    pub base: Positional<SNLType>,
+    pub(crate) base: Positional<SNLType>,
     pub(crate) name: String,
 }
 
@@ -70,30 +74,40 @@ impl TypeDeclare {
     pub fn name(&self) -> &str {
         self.name.as_str()
     }
-}
 
-#[derive(Debug, Serialize)]
-pub struct VariableDeclare {
-    pub base: SNLType,
-    pub variables: Vec<String>,
+    #[inline]
+    pub fn base(&self) -> Positional<&SNLType> {
+        Positional::from_position(self.base.position(), &self.base.inner)
+    }
+
+    #[inline]
+    pub fn base_raw(&self) -> SNLType {
+        self.base.inner.clone()
+    }
 }
 
 #[derive(Debug, Serialize)]
 pub struct ProcedureDeclare {
-    pub name: String,
+    pub(crate) name: String,
     pub params: PositionalVec<Param>,
     pub declare: Box<ProgramDeclare>,
     pub body: StatementList,
 }
 
-#[derive(Debug, Serialize)]
+impl ProcedureDeclare {
+    pub fn name(&self) -> &str {
+        self.name.as_str()
+    }
+}
+
+#[derive(Debug, Serialize, PartialEq, Clone)]
 #[serde(tag = "type")]
 pub enum SNLBaseType {
     Integer,
     Char,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(tag = "type", content = "value")]
 pub enum SNLType {
     Integer,
@@ -103,19 +117,19 @@ pub enum SNLType {
     Others(String),
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 pub struct SNLTypeArray {
     pub base: SNLBaseType,
     pub lower_bound: usize,
     pub upper_bound: usize,
 }
 
-pub type SNLTypeRecord = Vec<TypeRecord>;
+pub type SNLTypeRecord = Vec<TypedIdentifiers>;
 
-#[derive(Debug, Serialize)]
-pub struct TypeRecord {
+#[derive(Debug, Serialize, Clone)]
+pub struct TypedIdentifiers {
     pub type_name: SNLType,
-    pub identifiers: Vec<String>,
+    pub identifiers: PositionalVec<String>,
 }
 
 pub type StatementList = Vec<Statement>;
@@ -186,8 +200,7 @@ pub struct RelationExpression {
 #[derive(Debug, Serialize)]
 pub struct Param {
     pub is_var: bool,
-    pub type_name: SNLType,
-    pub identifiers: Vec<String>,
+    pub inner: TypedIdentifiers,
 }
 
 #[derive(Debug, Serialize)]
