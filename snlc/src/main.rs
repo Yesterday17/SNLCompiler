@@ -74,6 +74,6 @@ fn main() {
         None => panic!("no parser specified")
     };
     if mode == "parse" {
-        println!("{:#?}", ast);
+        println!("{}", serde_json::to_string(&ast).unwrap());
     }
 }

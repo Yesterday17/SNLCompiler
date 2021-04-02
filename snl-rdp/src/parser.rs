@@ -449,7 +449,7 @@ impl Parser {
         })
     }
 
-    fn parse_variable_visit(&self) -> Result<VariableVisit, String> {
+    fn parse_variable_visit(&self) -> Result<Option<VariableVisit>, String> {
         let dot = if TokenType::Dot == self.inner.current() {
             self.inner.take(TokenType::Dot)?;
             Some(self.inner.take(TokenType::Identifer)?.image.clone())
@@ -465,6 +465,10 @@ impl Parser {
         } else {
             None
         };
-        Ok(VariableVisit { dot, sqbr })
+        Ok(if let (None, None) = (&dot, &sqbr) {
+            None
+        } else {
+            Some(VariableVisit { dot, sqbr })
+        })
     }
 }
