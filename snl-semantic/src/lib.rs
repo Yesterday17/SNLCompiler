@@ -295,8 +295,8 @@ impl Semantic {
                                 // only record type can be visited
                                 if !current_type.starts_with("{") {
                                     self.errors.borrow_mut().push(Positional::from_position(
-                                        (0, 0),// FIXME
-                                        Error::UnexpectedField,
+                                        field.position(),
+                                        Error::InvalidFieldIndexType(current_type.clone()),
                                     ));
                                     current_type.clear();
                                 } else {
@@ -313,8 +313,8 @@ impl Semantic {
                                     // field not found in record
                                     if type_got == "" {
                                         self.errors.borrow_mut().push(Positional::from_position(
-                                            (0, 0),// FIXME
-                                            Error::UndefinedRecordField(field.to_owned()),
+                                            field.position(),
+                                            Error::UndefinedRecordField(field.inner().clone()),
                                         ));
                                     }
                                     current_type = type_got;
@@ -327,7 +327,7 @@ impl Semantic {
                                     // only array type can be indexed
                                     if !current_type.starts_with("[") {
                                         self.errors.borrow_mut().push(Positional::from_position(
-                                            (0, 0),// FIXME
+                                            index.left.position(),
                                             Error::UnexpectedArrayIndex,
                                         ));
                                         current_type.clear();
@@ -337,7 +337,7 @@ impl Semantic {
                                         // only integer is valid index type
                                         if index_type != "integer" {
                                             self.errors.borrow_mut().push(Positional::from_position(
-                                                (0, 0),// FIXME
+                                                index.left.position(),
                                                 Error::UncompatableType(index_type, "integer".to_owned()),
                                             ));
                                             current_type.clear();

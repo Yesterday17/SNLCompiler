@@ -25,7 +25,7 @@ pub enum Error {
     UnexpectedArrayIndex,
 
     /// Field is only available in Records
-    UnexpectedField,
+    InvalidFieldIndexType(String),
     /// Undefined field in records
     UndefinedRecordField(String),
 

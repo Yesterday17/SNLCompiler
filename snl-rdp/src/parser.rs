@@ -472,7 +472,7 @@ impl Parser {
     fn parse_variable_visit(&self) -> Result<Option<VariableVisit>, String> {
         let dot = if TokenType::Dot == self.inner.current() {
             self.inner.take(TokenType::Dot)?;
-            Some(self.inner.take(TokenType::Identifer)?.image.clone())
+            Some(self.inner.take(TokenType::Identifer)?)
         } else {
             None
         };
@@ -488,7 +488,10 @@ impl Parser {
         Ok(if let (None, None) = (&dot, &sqbr) {
             None
         } else {
-            Some(VariableVisit { dot, sqbr })
+            Some(VariableVisit {
+                dot: dot.map(|d| Positional::from_token(d, d.image.clone())),
+                sqbr,
+            })
         })
     }
 }

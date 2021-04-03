@@ -339,7 +339,7 @@ pub struct Param {
 
 #[derive(Debug, Serialize)]
 pub struct VariableVisit {
-    pub dot: Option<String>,
+    pub dot: Option<Positional<String>>,
     pub sqbr: Option<Box<Expression>>,
 }
 
