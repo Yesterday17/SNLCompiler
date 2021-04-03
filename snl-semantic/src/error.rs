@@ -12,6 +12,9 @@ pub enum Error {
     /// `(got, expect)`
     UncompatableType(String, String),
 
+    /// Variable represent only accepts variable symbol
+    InvalidVariableRepresent(String),
+
     /// Invalid array, for example, lower bound is larger than higher bound
     InvalidArrayDefinition,
     /// Constant array visit index is lower than lower bound or higher than high bound
@@ -41,4 +44,6 @@ pub enum Error {
 
     /// Read only accepts Integer and Char
     InvalidReadType(String),
+    /// Write only accepts Integer and Char
+    InvalidWriteType(String),
 }

@@ -345,7 +345,7 @@ pub struct VariableVisit {
 
 #[derive(Debug, Serialize)]
 pub struct VariableRepresent {
-    pub base: String,
+    pub base: Positional<String>,
     pub visit: Option<VariableVisit>,
 }
 

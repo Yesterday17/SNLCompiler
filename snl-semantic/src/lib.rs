@@ -151,7 +151,18 @@ impl Semantic {
                     }
                 }
                 Statement::Output(output) => {
-                    self.analyze_expression(output);
+                    let write_type = self.analyze_expression(output);
+                    match write_type.as_str() {
+                        // integer and char are valid types
+                        // skip mixex type(empty string)
+                        "integer" | "char" | "" => {}
+                        _ => {
+                            self.errors.borrow_mut().push(Positional::from_position(
+                                output.left.position(),
+                                Error::InvalidWriteType(write_type),
+                            ))
+                        }
+                    }
                 }
                 Statement::Return(ret) => {
                     self.analyze_expression(ret);
@@ -159,9 +170,15 @@ impl Semantic {
                 Statement::Assign(assign) => {
                     let left_type = self.analyze_variable_represent(&assign.variable);
                     let right_type = self.analyze_expression(&assign.value);
-                    if left_type != right_type {
+
+                    if left_type == "" {
                         self.errors.borrow_mut().push(Positional::from_position(
-                            (0, 0), // FIXME
+                            assign.variable.base.position(),
+                            Error::InvalidAssignee,
+                        ))
+                    } else if left_type != right_type {
+                        self.errors.borrow_mut().push(Positional::from_position(
+                            assign.value.left.position(),
                             Error::AssignTypeMismatch(right_type, left_type),
                         ))
                     }
@@ -266,96 +283,100 @@ impl Semantic {
     fn analyze_variable_represent(&self, repr: &VariableRepresent) -> String {
         match self.symbols.borrow().query(&repr.base) {
             Some(symbol) => {
+                // found symbol in table
                 match symbol {
                     Symbol::Variable(current_type) => {
-                        match &repr.visit {
-                            Some(visit) => {
-                                // record field
-                                let current_type = match &visit.dot {
-                                    Some(field) => {
-                                        if !current_type.starts_with("{") {
-                                            self.errors.borrow_mut().push(Positional::from_position(
-                                                (0, 0),// FIXME
-                                                Error::UnexpectedField,
-                                            ));
-                                            return "".to_owned();
+                        // the only valid variable represent base is Variable
+                        let mut current_type = current_type.to_owned();
+                        // if visit exist
+                        if let Some(visit) = &repr.visit {
+                            // record field
+                            if let Some(field) = &visit.dot {
+                                // only record type can be visited
+                                if !current_type.starts_with("{") {
+                                    self.errors.borrow_mut().push(Positional::from_position(
+                                        (0, 0),// FIXME
+                                        Error::UnexpectedField,
+                                    ));
+                                    current_type.clear();
+                                } else {
+                                    let mut type_got = String::new();
+                                    let parts: Vec<_> = current_type[1..(current_type.len() - 1)].split(";").collect();
+                                    for p in parts {
+                                        let fields: Vec<_> = p.split(":").collect();
+                                        let variables: Vec<_> = fields[0].split(",").collect();
+                                        if variables.contains(&field.as_str()) {
+                                            type_got += fields[1];
+                                            break;
                                         }
-
-                                        let mut type_got = String::new();
-                                        let parts: Vec<_> = current_type[1..(current_type.len() - 1)].split(";").collect();
-                                        for p in parts {
-                                            let fields: Vec<_> = p.split(":").collect();
-                                            let variables: Vec<_> = fields[0].split(",").collect();
-                                            if variables.contains(&field.as_str()) {
-                                                type_got += fields[1];
-                                                break;
-                                            }
-                                        }
-                                        if type_got == "" {
-                                            self.errors.borrow_mut().push(Positional::from_position(
-                                                (0, 0),// FIXME
-                                                Error::UndefinedRecordField(field.to_owned()),
-                                            ));
-                                            return type_got;
-                                        }
-                                        type_got
                                     }
-                                    None => current_type.clone(),
-                                };
-                                // array index
-                                match &visit.sqbr {
-                                    Some(index) => {
-                                        // need array type
-                                        if !current_type.starts_with("[") {
-                                            self.errors.borrow_mut().push(Positional::from_position(
-                                                (0, 0),// FIXME
-                                                Error::UnexpectedArrayIndex,
-                                            ));
-                                            return "".to_owned();
-                                        }
+                                    // field not found in record
+                                    if type_got == "" {
+                                        self.errors.borrow_mut().push(Positional::from_position(
+                                            (0, 0),// FIXME
+                                            Error::UndefinedRecordField(field.to_owned()),
+                                        ));
+                                    }
+                                    current_type = type_got;
+                                }
+                            }
 
-                                        // index type
+                            // array index
+                            if !current_type.is_empty() {
+                                if let Some(index) = &visit.sqbr {
+                                    // only array type can be indexed
+                                    if !current_type.starts_with("[") {
+                                        self.errors.borrow_mut().push(Positional::from_position(
+                                            (0, 0),// FIXME
+                                            Error::UnexpectedArrayIndex,
+                                        ));
+                                        current_type.clear();
+                                    } else {
+                                        // get index type
                                         let index_type = self.analyze_expression(index);
+                                        // only integer is valid index type
                                         if index_type != "integer" {
                                             self.errors.borrow_mut().push(Positional::from_position(
                                                 (0, 0),// FIXME
                                                 Error::UncompatableType(index_type, "integer".to_owned()),
                                             ));
-                                            return "".to_owned();
-                                        }
-
-                                        // return type
-                                        if current_type.ends_with("integer]") {
-                                            "integer".to_owned()
+                                            current_type.clear();
                                         } else {
-                                            "char".to_owned()
+                                            // return type
+                                            current_type = if current_type.ends_with("integer]") {
+                                                "integer".to_owned()
+                                            } else {
+                                                "char".to_owned()
+                                            }
                                         }
                                     }
-                                    None => current_type,
                                 }
                             }
-                            None => current_type.to_owned()
                         }
+                        current_type
                     }
                     Symbol::Procedure() => {
+                        // procedure is not a valid **variable** represent
                         self.errors.borrow_mut().push(Positional::from_position(
-                            (0, 0),// FIXME
-                            Error::UncompatableType("Variable".to_string(), "Procedure".to_owned()),
+                            repr.base.position(),
+                            Error::InvalidVariableRepresent("Procedure".to_owned()),
                         ));
-                        "".to_owned()
+                        String::new()
                     }
-                    Symbol::Type(ty) => {
+                    Symbol::Type(symbol_type) => {
+                        // type (alias) is not a valid **variable** represent
                         self.errors.borrow_mut().push(Positional::from_position(
-                            (0, 0),// FIXME
-                            Error::UncompatableType("Variable".to_string(), ty.to_owned()),
+                            repr.base.position(),
+                            Error::InvalidVariableRepresent(symbol_type.clone()),
                         ));
-                        "".to_owned()
+                        String::new()
                     }
                 }
             }
             None => {
+                // repr.base not found in symbol table
                 self.errors.borrow_mut().push(Positional::from_position(
-                    (0, 0),// FIXME
+                    repr.base.position(),
                     Error::UndefinedIdentifier(repr.base.clone()),
                 ));
                 "".to_owned()

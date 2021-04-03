@@ -340,12 +340,15 @@ impl Parser {
     }
 
     fn parse_assign_statement(&self) -> Result<Statement, String> {
-        let base = self.inner.take(TokenType::Identifer)?.image.clone();
+        let base = self.inner.take(TokenType::Identifer)?;
         let visit = self.parse_variable_visit()?;
         self.inner.take(TokenType::Assign)?;
         let value = self.parse_expression()?;
         Ok(Statement::Assign(AssignStatement {
-            variable: VariableRepresent { base, visit },
+            variable: VariableRepresent {
+                base: Positional::from_token(base, base.image.clone()),
+                visit,
+            },
             value,
         }))
     }
@@ -422,9 +425,12 @@ impl Parser {
                 ExpressionFactor::Constant(u32::from_str(num).unwrap())
             }
             TokenType::Identifer => {
-                let base = self.inner.take(TokenType::Identifer)?.image.clone();
+                let base = self.inner.take(TokenType::Identifer)?;
                 let visit = self.parse_variable_visit()?;
-                ExpressionFactor::Variable(VariableRepresent { base, visit })
+                ExpressionFactor::Variable(VariableRepresent {
+                    base: Positional::from_token(base, base.image.clone()),
+                    visit,
+                })
             }
             _ => return Err(format!("unexpected factor token: {:?}", self.inner.current()))
         };

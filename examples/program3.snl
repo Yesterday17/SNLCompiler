@@ -2,7 +2,7 @@
 
 program program3
 type t1 = integer;
-     t2 = tnotexist; { Undefined Type }                           { implemented }
+     t2 = tnotexist;             { Undefined Type }               { implemented }
 var integer                  test1, test2;
     char                     ch;
     array [15..5] of integer t1; { Invalid Array Definition }     { implemented }
