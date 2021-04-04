@@ -40,7 +40,7 @@ VarDecListMore       -> VarDecList
 VarDecListMore       -> ''
 
 ProcDec              -> ProcDeclaration
-ProcDeclaration      -> PROCEDURE ProcName BR_OPEN ParamList? BR_CLOSE SEMICOLON ProcDecPart ProcBody ProcDeclaration
+ProcDeclaration      -> PROCEDURE ProcName BR_OPEN ParamList BR_CLOSE SEMICOLON ProcDecPart ProcBody ProcDeclaration
 ProcDeclaration      -> ''
 ProcName             -> IDENTIFIER
 ParamList            -> Param ParamListMore

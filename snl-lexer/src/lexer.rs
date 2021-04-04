@@ -1,4 +1,4 @@
-use crate::token::{Token, TokenType};
+use snl_utils::token::{Token, TokenType};
 use std::str::FromStr;
 
 #[derive(PartialEq)]

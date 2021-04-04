@@ -1,5 +1,7 @@
-use snl_lexer::token::{Token, TokenType};
 use std::cell::Cell;
+use crate::token::{Token, TokenType};
+
+pub mod token;
 
 pub struct Tokens {
     inner: Vec<Token>,

@@ -1,4 +1,4 @@
-use snl_lexer::token::{Token, TokenType};
+use snl_utils::token::{Token, TokenType};
 use snl_utils::Tokens;
 use crate::models::*;
 use std::str::FromStr;

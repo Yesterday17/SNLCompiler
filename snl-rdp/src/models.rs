@@ -1,6 +1,6 @@
 use serde::Serialize;
 use std::ops::Deref;
-use snl_lexer::token::Token;
+use snl_utils::token::Token;
 use std::collections::{BTreeMap, BTreeSet};
 use std::str::FromStr;
 
