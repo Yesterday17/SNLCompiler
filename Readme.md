@@ -1,8 +1,8 @@
-## SNL Compiler
+# SNL Compiler
 
 SNL Compiler frontend implemented in rust and c(with ffi).
 
-### Structure
+## Structure
 
 - [x] snl-lexer: Lexer written in Rust
     - [x] Tokenize
@@ -35,3 +35,8 @@ SNL Compiler frontend implemented in rust and c(with ffi).
         - [x] Invalid write type
 - [x] snl-utils: Some common parts
 - [ ] snlc: Simple representation program, uses all the librarys above
+
+## Credits
+
+- http://jsmachines.sourceforge.net/machines/ll1.html
+- https://vanya.jp.net/vtree/
