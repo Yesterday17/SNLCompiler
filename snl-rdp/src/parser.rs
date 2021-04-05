@@ -1,6 +1,6 @@
 use snl_utils::token::{Token, TokenType};
-use snl_utils::Tokens;
-use crate::models::*;
+use snl_utils::tokens::Tokens;
+use snl_utils::ast::*;
 use std::str::FromStr;
 
 pub struct Parser {

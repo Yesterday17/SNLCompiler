@@ -6,3 +6,4 @@ edition = "2018"
 
 [dependencies]
 snl-rdp = { path = "../snl-rdp" }
+snl-utils = { path = "../snl-utils" }

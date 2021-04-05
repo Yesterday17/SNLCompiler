@@ -1,6 +1,6 @@
 use crate::symbol::{SymbolTable, Symbol};
 use snl_rdp::Program;
-use snl_rdp::models::*;
+use snl_utils::ast::*;
 use crate::error::Error;
 use std::cell::RefCell;
 

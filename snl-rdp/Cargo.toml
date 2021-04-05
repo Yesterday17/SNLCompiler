@@ -5,6 +5,5 @@ authors = ["Yesterday17 <t@yesterday17.cn>"]
 edition = "2018"
 
 [dependencies]
-serde = { version = "1", features = ["derive"] }
 snl-lexer = { path = "../snl-lexer" }
 snl-utils = { path = "../snl-utils" }

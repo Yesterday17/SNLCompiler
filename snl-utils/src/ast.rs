@@ -1,6 +1,6 @@
 use serde::Serialize;
 use std::ops::Deref;
-use snl_utils::token::Token;
+use crate::token::Token;
 use std::collections::{BTreeMap, BTreeSet};
 use std::str::FromStr;
 
@@ -71,8 +71,8 @@ pub struct ProgramDeclare {
 
 #[derive(Debug, Serialize)]
 pub struct TypeDeclare {
-    pub(crate) base: Positional<SNLType>,
-    pub(crate) name: String,
+    pub base: Positional<SNLType>,
+    pub name: String,
 }
 
 impl TypeDeclare {
@@ -89,7 +89,7 @@ impl TypeDeclare {
 
 #[derive(Debug, Serialize)]
 pub struct ProcedureDeclare {
-    pub(crate) name: String,
+    pub name: String,
     pub params: PositionalVec<Param>,
     pub declare: Box<ProgramDeclare>,
     pub body: StatementList,
@@ -295,7 +295,7 @@ pub struct AssignStatement {
 
 #[derive(Debug, Serialize)]
 pub struct CallStatement {
-    pub(crate) name: String,
+    pub name: String,
     pub params: Vec<Expression>,
 }
 
@@ -351,7 +351,7 @@ pub struct VariableRepresent {
 
 #[cfg(test)]
 mod tests {
-    use crate::models::{SNLType, SNLTypeArray, SNLBaseType, TypedIdentifiers, Positional};
+    use crate::ast::{SNLType, SNLTypeArray, SNLBaseType, TypedIdentifiers, Positional};
     use std::str::FromStr;
 
     #[test]
