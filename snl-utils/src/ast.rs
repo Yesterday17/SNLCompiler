@@ -4,7 +4,7 @@ use crate::token::Token;
 use std::collections::{BTreeMap, BTreeSet};
 use std::str::FromStr;
 
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 pub struct Positional<T> {
     pub line: u32,
     pub column: u32,
@@ -101,7 +101,7 @@ impl ProcedureDeclare {
     }
 }
 
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 #[serde(tag = "type")]
 pub enum SNLBaseType {
     Integer,
@@ -129,7 +129,7 @@ impl FromStr for SNLBaseType {
     }
 }
 
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 #[serde(tag = "type", content = "value")]
 pub enum SNLType {
     Integer,
@@ -137,6 +137,15 @@ pub enum SNLType {
     Array(SNLTypeArray),
     Record(SNLTypeRecord),
     Others(String),
+}
+
+impl From<SNLBaseType> for SNLType {
+    fn from(ty: SNLBaseType) -> Self {
+        match ty {
+            SNLBaseType::Integer => SNLType::Integer,
+            SNLBaseType::Char => SNLType::Char,
+        }
+    }
 }
 
 /// Begin with:
@@ -239,7 +248,7 @@ impl FromStr for SNLType {
     }
 }
 
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 pub struct SNLTypeArray {
     pub base: SNLBaseType,
     pub lower_bound: usize,
@@ -254,7 +263,7 @@ impl ToString for SNLTypeArray {
 
 pub type SNLTypeRecord = Vec<TypedIdentifiers>;
 
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 pub struct TypedIdentifiers {
     pub type_name: SNLType,
     pub identifiers: PositionalVec<String>,

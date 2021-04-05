@@ -377,7 +377,7 @@ impl Semantic {
                 // repr.base not found in symbol table
                 self.errors.borrow_mut().push(Positional::from_position(
                     repr.base.position(),
-                    Error::UndefinedIdentifier(repr.base.clone()),
+                    Error::UndefinedIdentifier(repr.base.inner().clone()),
                 ));
                 "".to_owned()
             }

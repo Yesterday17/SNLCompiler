@@ -67,6 +67,7 @@ impl Parser {
                                 return Err(format!("Expected {:?}, got {:?}", terminal, current.token_type));
                             }
                             self.stack.pop();
+                            self.tokens.move_next();
                             self.params.push(ASTNodeValue::Terminal(current.clone()))
                         }
                         PredictValue::NonTerminal(non_terminal) => {
@@ -90,7 +91,7 @@ impl Parser {
                                         }
                                     }
                                 }
-                                None => return Err(format!("No predict rule found for ({}, {:?})", non_terminal, current.token_type))
+                                None => return Err(format!("No predict rule found for rule: {}, token: {:?}", non_terminal, current.token_type))
                             }
                         }
                     }
