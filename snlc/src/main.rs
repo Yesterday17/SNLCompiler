@@ -71,6 +71,10 @@ fn main() {
             let parser = snl_rdp::Parser::new(tokens);
             parser.parse().expect("Failed to parse")
         }
+        Some("ll1-rs")=> {
+            let mut parser = snl_ll1::Parser::new(tokens);
+            parser.parse().expect("Failed to parse")
+        }
         Some(_) => unimplemented!(),
         None => panic!("no parser specified")
     };

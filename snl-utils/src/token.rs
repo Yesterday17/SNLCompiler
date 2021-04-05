@@ -2,7 +2,7 @@ use std::str::FromStr;
 use std::fmt::{Display, Formatter};
 
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
     pub image: String,
@@ -25,7 +25,7 @@ impl Display for Token {
 }
 
 #[repr(u8)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum TokenType {
     Identifer,
     Int,

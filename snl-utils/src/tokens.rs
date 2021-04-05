@@ -22,16 +22,17 @@ impl Tokens {
         self.current_token().token_type
     }
 
+    pub fn now_token(&self) -> Option<&Token> {
+        self.inner.get(self.pos.get())
+    }
+
+    pub fn now(&self) -> Option<TokenType> {
+        self.now_token().map(|t| t.token_type)
+    }
+
     pub fn look_after_token(&self) -> Option<&Token> {
         let next = self.pos.get() + 1;
-        let token = self.inner.get(next);
-        match token {
-            Some(token) => {
-                // self.pos.set(next);
-                Some(token)
-            }
-            None => None,
-        }
+        self.inner.get(next)
     }
 
     pub fn look_after(&self) -> Option<TokenType> {
