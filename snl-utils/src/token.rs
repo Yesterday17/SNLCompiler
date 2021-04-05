@@ -24,6 +24,12 @@ impl Display for Token {
     }
 }
 
+impl Token {
+    pub fn position(&self) -> (u32, u32) {
+        (self.line, self.column)
+    }
+}
+
 #[repr(u8)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum TokenType {

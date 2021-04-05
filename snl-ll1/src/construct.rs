@@ -24,9 +24,11 @@ pub enum ASTNodeValue {
     Top(usize),
     RecordType(SNLTypeRecord),
 
+    IdentifierList(PositionalVec<String>),
+    ProcedureDeclaration(PositionalVec<ProcedureDeclare>),
 }
 
-pub struct ConstructTable(HashMap<&'static str, fn(&[ASTNodeValue]) -> Result<ASTNodeValue, String>>);
+pub struct ConstructTable(HashMap<&'static str, fn(Vec<ASTNodeValue>) -> Result<ASTNodeValue, String>>);
 
 impl Default for ConstructTable {
     fn default() -> Self {
@@ -97,71 +99,71 @@ impl Default for ConstructTable {
 }
 
 impl ConstructTable {
-    pub fn construct(&self, ty: &'static str, input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+    pub fn construct(&self, ty: &'static str, mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
         self.0[ty](input)
     }
 }
 
-fn construct_program(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_program(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_program_head(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
-    Ok(match &input[0] {
-        ASTNodeValue::ProgramName(name) => ASTNodeValue::ProgramName(name.clone()),
+fn construct_program_head(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
+    Ok(match input.pop().unwrap() {
+        ASTNodeValue::ProgramName(name) => ASTNodeValue::ProgramName(name),
         _ => unreachable!(),
     })
 }
 
-fn construct_program_name(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
-    let token = match &input[0] {
+fn construct_program_name(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
+    let token = match input.pop().unwrap() {
         ASTNodeValue::Terminal(token) => token,
         _ => unreachable!(),
     };
-    Ok(ASTNodeValue::ProgramName(token.image.clone()))
+    Ok(ASTNodeValue::ProgramName(token.image))
 }
 
-fn construct_declare_part(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_declare_part(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_type_dec(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_type_dec(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_type_declaration(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_type_declaration(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_type_dec_list(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_type_dec_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_type_dec_list_more(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_type_dec_list_more(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_type_id(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
-    let token = match &input[0] {
+fn construct_type_id(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
+    let token = match input.pop().unwrap() {
         ASTNodeValue::Terminal(token) => token,
         _ => unreachable!(),
     };
-    Ok(ASTNodeValue::TypeId(token.image.clone()))
+    Ok(ASTNodeValue::TypeId(token.image))
 }
 
-fn construct_type_name(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
-    Ok(ASTNodeValue::TypeName(match &input[0] {
-        ASTNodeValue::BaseType(ty) => ty.clone().into(),
-        ASTNodeValue::StructureType(ty) => ty.clone(),
+fn construct_type_name(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
+    Ok(ASTNodeValue::TypeName(match input.pop().unwrap() {
+        ASTNodeValue::BaseType(ty) => ty.into(),
+        ASTNodeValue::StructureType(ty) => ty,
         ASTNodeValue::Terminal(token) => {
-            SNLType::Others(token.image.clone())
+            SNLType::Others(token.image)
         }
         _ => unreachable!(),
     }))
 }
 
-fn construct_base_type(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
-    let token = match &input[0] {
+fn construct_base_type(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
+    let token = match input.pop().unwrap() {
         ASTNodeValue::Terminal(token) => token,
         _ => unreachable!(),
     };
@@ -172,198 +174,216 @@ fn construct_base_type(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
     }))
 }
 
-fn construct_structure_type(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_structure_type(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_array_type(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_array_type(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_low(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_low(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_top(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_top(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_record_type(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_record_type(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_field_dec_list(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_field_dec_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_field_dec_list_more(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_field_dec_list_more(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_field_dec_type(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_field_dec_type(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_identifier_list(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_identifier_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
+    let mut result: PositionalVec<String> = Default::default();
+    match input.pop().unwrap() {
+        ASTNodeValue::Terminal(token) => result.push(Positional::from_position(token.position(), token.image)),
+        _ => unreachable!(),
+    };
+    match input.pop().unwrap() {
+        ASTNodeValue::IdentifierList(list) => {
+            for value in list {
+                result.push(value.clone());
+            }
+        }
+        ASTNodeValue::None => {}
+        _ => unreachable!()
+    }
+    Ok(ASTNodeValue::IdentifierList(result))
+}
+
+fn construct_identifier_list_more(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_identifier_list_more(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_var_dec(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_var_dec(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_var_declaration(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_var_declaration(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_var_dec_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_var_dec_list(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_var_dec_list_more(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_var_dec_list_more(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_proc_dec(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
+    let result = match input.pop().unwrap() {
+        ASTNodeValue::ProcedureDeclaration(dec) => dec,
+        _ => unreachable!()
+    };
+    Ok(ASTNodeValue::ProcedureDeclaration(result))
+}
+
+fn construct_proc_declaration(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_proc_dec(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_proc_name(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_proc_declaration(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_param_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_proc_name(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_param_list_more(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_param_list(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_param(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_param_list_more(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_proc_dec_part(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_param(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_proc_body(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_proc_dec_part(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_program_body(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_proc_body(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_statement_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_program_body(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_more_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_statement_list(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_more_statement(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_ass_call(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_statement(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_assignment_rest(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_ass_call(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_conditional_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_assignment_rest(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_loop_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_conditional_statement(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_input_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_loop_statement(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_output_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_input_statement(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_return_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_output_statement(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_call_statement_rest(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_return_statement(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_call_statement_rest_exp(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_call_statement_rest(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_comma_exp(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_call_statement_rest_exp(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_rel_exp(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_comma_exp(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_exp(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_rel_exp(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_exp_postfix(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_exp(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_term(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_exp_postfix(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_term_postfix(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_term(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_factor(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_term_postfix(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_variable(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_factor(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_variable_visit(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_variable(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_variable_visit_field(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_variable_visit(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_variable_visit_index(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_variable_visit_field(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_cmd_op(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_variable_visit_index(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_add_op(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }
 
-fn construct_cmd_op(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
-    unimplemented!()
-}
-
-fn construct_add_op(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
-    unimplemented!()
-}
-
-fn construct_mult_op(input: &[ASTNodeValue]) -> Result<ASTNodeValue, String> {
+fn construct_mult_op(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     unimplemented!()
 }

@@ -46,15 +46,13 @@ impl Parser {
                 if offset == &self.stack.len() {
                     // remove and get offset
                     let start_offset = self.param_offset.pop().unwrap();
-                    // handle rule
-                    let result = self.constructor.construct(
-                        self.construct.last().unwrap(),
-                        &self.params[start_offset..],
-                    )?;
-                    // remove old parameter
+                    // params
+                    let mut params: Vec<_> = Default::default();
                     for _ in 1..(self.params.len() - start_offset) {
-                        self.params.pop();
+                        params.push(self.params.pop().unwrap());
                     }
+                    // handle rule
+                    let result = self.constructor.construct(self.construct.last().unwrap(), params)?;
                     // add new parameter
                     self.params.push(result);
                 }
