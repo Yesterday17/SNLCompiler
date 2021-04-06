@@ -45,6 +45,16 @@ impl<T> Positional<T> {
     }
 }
 
+impl Positional<String> {
+    pub fn from_token_image(token: &Token) -> Self {
+        Positional::new(token.line, token.column, token.image.clone())
+    }
+
+    pub fn from_token_image_raw(token: Token) -> Self {
+        Positional::new(token.line, token.column, token.image)
+    }
+}
+
 impl<T> Deref for Positional<T> {
     type Target = T;
 

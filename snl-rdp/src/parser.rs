@@ -211,10 +211,7 @@ impl Parser {
                     if need_comma {
                         break;
                     } else {
-                        ids.push(Positional::from_token(
-                            self.inner.current_token(),
-                            self.inner.current_token().image.clone(),
-                        ));
+                        ids.push(Positional::from_token_image(self.inner.current_token()));
                         need_comma = true;
                         self.inner.move_next();
                     }
@@ -428,7 +425,7 @@ impl Parser {
                 let base = self.inner.take(TokenType::Identifer)?;
                 let visit = self.parse_variable_visit()?;
                 ExpressionFactor::Variable(VariableRepresent {
-                    base: Positional::from_token(base, base.image.clone()),
+                    base: Positional::from_token_image(base),
                     visit,
                 })
             }

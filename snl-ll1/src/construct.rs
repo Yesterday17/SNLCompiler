@@ -117,6 +117,11 @@ impl ConstructTable {
     }
 }
 
+macro_rules! pop {
+    ($v: ident) => {$v.pop().unwrap()};
+}
+
+#[inline]
 fn token(input: &mut Vec<ASTNodeValue>) -> Token {
     match input.pop().unwrap() {
         ASTNodeValue::Terminal(token) => token,
@@ -124,9 +129,9 @@ fn token(input: &mut Vec<ASTNodeValue>) -> Token {
     }
 }
 
+#[inline]
 fn identifier(input: &mut Vec<ASTNodeValue>) -> Positional<String> {
-    let token = token(input);
-    Positional::from_position(token.position(), token.image)
+    Positional::from_token_image_raw(token(input))
 }
 
 fn construct_program(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
@@ -134,7 +139,7 @@ fn construct_program(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, Strin
 }
 
 fn construct_program_head(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    input.pop().unwrap();
+    pop!(input);
     Ok(input.pop().unwrap())
 }
 
@@ -176,7 +181,7 @@ fn construct_type_dec(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, Stri
 }
 
 fn construct_type_declaration(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    input.pop();
+    pop!(input);
     Ok(input.pop().unwrap())
 }
 
@@ -185,12 +190,12 @@ fn construct_type_dec_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue,
         ASTNodeValue::TypeId(id) => id,
         _ => unreachable!()
     };
-    input.pop();
+    pop!(input);
     let base = match input.pop().unwrap() {
         ASTNodeValue::TypeName(name) => name,
         _ => unreachable!()
     };
-    input.pop();
+    pop!(input);
 
     let mut more = match input.pop().unwrap() {
         ASTNodeValue::TypeDeclaration(list) => list,
@@ -289,7 +294,7 @@ fn construct_var_dec(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, Strin
 }
 
 fn construct_var_declaration(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    input.pop();
+    pop!(input);
     Ok(input.pop().unwrap())
 }
 
@@ -302,7 +307,7 @@ fn construct_var_dec_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, 
         ASTNodeValue::IdentifierList(l) => l,
         _ => unreachable!()
     };
-    input.pop();
+    pop!(input);
     let mut more = match input.pop().unwrap() {
         ASTNodeValue::VarDeclaration(dec) => dec,
         ASTNodeValue::None => Default::default(),
@@ -383,7 +388,7 @@ fn construct_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, Str
                 ASTNodeValue::AssignStatementRest((visit, exp)) => {
                     ASTNodeValue::Statement(Statement::Assign(AssignStatement {
                         variable: VariableRepresent {
-                            base: Positional::from_position(token.position(), token.image),
+                            base: Positional::from_token_image_raw(token),
                             visit,
                         },
                         value: exp,
@@ -414,13 +419,9 @@ fn construct_loop_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue
 
 fn construct_input_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     // read ( identifier )
-    input.pop().unwrap();
-    input.pop().unwrap();
-    let identifier = match input.pop().unwrap() {
-        ASTNodeValue::Terminal(token) => Positional::from_position(token.position(), token.image),
-        _ => unreachable!()
-    };
-    Ok(ASTNodeValue::Statement(Statement::Input(identifier)))
+    pop!(input);
+    pop!(input);
+    Ok(ASTNodeValue::Statement(Statement::Input(identifier(&mut input))))
 }
 
 fn construct_output_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
@@ -484,12 +485,7 @@ fn construct_factor(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String
 }
 
 fn construct_variable(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    let id = match input.pop().unwrap() {
-        ASTNodeValue::Terminal(token) => {
-            Positional::from_position(token.position(), token.image)
-        }
-        _ => unreachable!()
-    };
+    let id = identifier(&mut input);
     let visit = match input.pop().unwrap() {
         ASTNodeValue::VariableVisit(visit) => {
             Some(visit)
