@@ -44,17 +44,21 @@ impl Parser {
             }
             if let Some(offset) = self.stack_offset.last() {
                 if offset == &self.stack.len() {
+                    // remove stack offset
+                    self.stack_offset.pop();
                     // remove and get offset
                     let start_offset = self.param_offset.pop().unwrap();
                     // params
                     let mut params: Vec<_> = Default::default();
-                    for _ in 1..(self.params.len() - start_offset) {
+                    for _ in 0..(self.params.len() - start_offset) {
                         params.push(self.params.pop().unwrap());
                     }
                     // handle rule
-                    let result = self.constructor.construct(self.construct.last().unwrap(), params)?;
+                    let result = self.constructor.construct(self.construct.pop().unwrap(), params)?;
                     // add new parameter
                     self.params.push(result);
+                    // continue
+                    continue;
                 }
             }
             match self.tokens.now_token() {

@@ -61,7 +61,7 @@ impl Parser {
         })
     }
 
-    fn parse_declare_type(&self) -> Result<Vec<Positional<TypeDeclare>>, String> {
+    fn parse_declare_type(&self) -> Result<PositionalVec<TypeDeclare>, String> {
         let mut declare = Vec::new();
         self.inner.take(TokenType::Type)?;
         loop {

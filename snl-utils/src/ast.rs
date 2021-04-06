@@ -4,7 +4,7 @@ use crate::token::Token;
 use std::collections::{BTreeMap, BTreeSet};
 use std::str::FromStr;
 
-#[derive(Debug, Serialize, PartialEq, Clone)]
+#[derive(Debug, Serialize)]
 pub struct Positional<T> {
     pub line: u32,
     pub column: u32,
@@ -101,7 +101,7 @@ impl ProcedureDeclare {
     }
 }
 
-#[derive(Debug, Serialize, PartialEq, Clone)]
+#[derive(Debug, Serialize)]
 #[serde(tag = "type")]
 pub enum SNLBaseType {
     Integer,
@@ -129,7 +129,7 @@ impl FromStr for SNLBaseType {
     }
 }
 
-#[derive(Debug, Serialize, PartialEq, Clone)]
+#[derive(Debug, Serialize)]
 #[serde(tag = "type", content = "value")]
 pub enum SNLType {
     Integer,
@@ -248,7 +248,7 @@ impl FromStr for SNLType {
     }
 }
 
-#[derive(Debug, Serialize, PartialEq, Clone)]
+#[derive(Debug, Serialize)]
 pub struct SNLTypeArray {
     pub base: SNLBaseType,
     pub lower_bound: usize,
@@ -263,7 +263,7 @@ impl ToString for SNLTypeArray {
 
 pub type SNLTypeRecord = Vec<TypedIdentifiers>;
 
-#[derive(Debug, Serialize, PartialEq, Clone)]
+#[derive(Debug, Serialize)]
 pub struct TypedIdentifiers {
     pub type_name: SNLType,
     pub identifiers: PositionalVec<String>,
