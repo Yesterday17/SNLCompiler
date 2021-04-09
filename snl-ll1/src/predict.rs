@@ -70,6 +70,7 @@ impl Default for PredictTable {
         result.inner.insert(PredictKey::from(("FieldDecType", Char)), vec![NonTerminal("BaseType")]);
         result.inner.insert(PredictKey::from(("FieldDecType", Array)), vec![NonTerminal("BaseType")]);
         result.inner.insert(PredictKey::from(("IdentifierList", Identifer)), vec![Terminal(Identifer), NonTerminal("IdentifierListMore")]);
+        result.inner.insert(PredictKey::from(("IdentifierListMore", BracketClose)), vec![]);
         result.inner.insert(PredictKey::from(("IdentifierListMore", Semicolon)), vec![]);
         result.inner.insert(PredictKey::from(("IdentifierListMore", Comma)), vec![Terminal(Comma), Terminal(Identifer), NonTerminal("IdentifierListMore")]);
         result.inner.insert(PredictKey::from(("VarDec", Var)), vec![NonTerminal("VarDeclaration")]);

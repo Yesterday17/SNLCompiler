@@ -10,7 +10,7 @@ SNL Compiler frontend implemented in rust and c(with ffi).
 - [x] snl-rdp: Recursive descent parser written in Rust
     - [x] Support all SNL syntax rules
 - [ ] snl-ll1: LL(1) parser written in Rust.
-- [ ] snl-semantic: Semantic Analysis part written in Rust
+- [x] snl-semantic: Semantic Analysis part written in Rust
     - [x] Construct symbol table
         - [x] Type
         - [x] Variable

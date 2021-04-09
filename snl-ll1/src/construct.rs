@@ -8,6 +8,8 @@ pub enum ASTNodeValue {
     None,
 
     Terminal(Token),
+    Int(usize),
+    String(String),
 
     Program(Positional<Program>),
     ProgramHead(Positional<String>),
@@ -15,12 +17,9 @@ pub enum ASTNodeValue {
     DeclarePart(ProgramDeclare),
 
     TypeDeclaration(PositionalVec<TypeDeclare>),
-    TypeId(String),
     TypeName(Positional<SNLType>),
     BaseType(Positional<SNLBaseType>),
-    StructureType(Positional<SNLType>),
     ArrayType(Positional<SNLTypeArray>),
-    Int(usize),
     RecordType(SNLTypeRecord),
 
     VarDeclaration(PositionalVec<TypedIdentifiers>),
@@ -212,7 +211,7 @@ fn construct_type_declaration(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeVal
 }
 
 fn construct_type_dec_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    let name = node!(input, TypeId);
+    let name = node!(input, String);
     pop!(input);
     let base = node!(input,TypeName);
     pop!(input);
@@ -233,13 +232,14 @@ fn construct_type_dec_list_more(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeV
 }
 
 fn construct_type_id(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    Ok(ASTNodeValue::TypeId(token!(input).image))
+    Ok(ASTNodeValue::String(token!(input).image))
 }
 
 fn construct_type_name(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     Ok(ASTNodeValue::TypeName(match pop!(input) {
         ASTNodeValue::BaseType(ty) => Positional::from_position(ty.position(), ty.into_inner().into()),
-        ASTNodeValue::StructureType(ty) => ty,
+        ASTNodeValue::ArrayType(ty) => Positional::from_position(ty.position(), SNLType::Array(ty.into_inner())),
+        // TODO: RecordType
         ASTNodeValue::Terminal(token) => {
             Positional::from_position(token.position(), SNLType::Others(token.image))
         }
@@ -257,11 +257,23 @@ fn construct_base_type(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, Str
 }
 
 fn construct_structure_type(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    Ok(pop!(input))
 }
 
 fn construct_array_type(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    let arr = token!(input);
+    pop!(input);
+    let low = node!(input, Int);
+    pop!(input);
+    let top = node!(input, Int);
+    pop!(input);
+    pop!(input);
+    let base_type = node!(input, BaseType);
+    Ok(ASTNodeValue::ArrayType(Positional::from_position(arr.position(), SNLTypeArray {
+        base: base_type.into_inner(),
+        lower_bound: low,
+        upper_bound: top,
+    })))
 }
 
 fn construct_int(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
@@ -297,7 +309,15 @@ fn construct_identifier_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValu
 }
 
 fn construct_identifier_list_more(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    Ok(if input.is_empty() {
+        ASTNodeValue::None
+    } else {
+        pop!(input);
+        let id = identifier!(input);
+        let mut list = node_default!(input, IdentifierList);
+        list.insert(0, id);
+        ASTNodeValue::IdentifierList(list)
+    })
 }
 
 fn construct_var_dec(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
@@ -335,7 +355,7 @@ fn construct_proc_declaration(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeVal
 }
 
 fn construct_proc_name(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    Ok(ASTNodeValue::String(identifier!(input).into_inner()))
 }
 
 fn construct_param_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
