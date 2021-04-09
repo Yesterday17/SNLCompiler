@@ -220,7 +220,6 @@ impl Semantic {
                     match self.symbols.borrow().query(call.name()) {
                         Some(symbol) => {
                             match symbol {
-                                // TODO: check procedure signature
                                 Symbol::Procedure(params) => {
                                     if params.len() != call.params.len() {
                                         // parameter count mismatch

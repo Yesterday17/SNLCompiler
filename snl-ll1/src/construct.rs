@@ -164,9 +164,10 @@ macro_rules! node_optional {
     };
 }
 
-#[inline]
-fn identifier(input: &mut Vec<ASTNodeValue>) -> Positional<String> {
-    Positional::from_token_image_raw(token!(input))
+macro_rules! identifier {
+    ($input: ident) => {
+        Positional::from_token_image_raw(token!($input))
+    };
 }
 
 fn construct_program(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
@@ -186,7 +187,7 @@ fn construct_program_head(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, 
 }
 
 fn construct_program_name(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    Ok(ASTNodeValue::ProgramHead(identifier(&mut input)))
+    Ok(ASTNodeValue::ProgramHead(identifier!(input)))
 }
 
 fn construct_declare_part(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
@@ -284,7 +285,7 @@ fn construct_field_dec_type(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue
 }
 
 fn construct_identifier_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    let mut result: PositionalVec<String> = vec![identifier(&mut input)];
+    let mut result: PositionalVec<String> = vec![identifier!(input)];
     match pop!(input) {
         ASTNodeValue::IdentifierList(mut list) => {
             result.append(&mut list);
@@ -313,8 +314,7 @@ fn construct_var_dec_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, 
     let identifiers = node!(input, IdentifierList);
     pop!(input);
     let mut more = node_default!(input, VarDeclaration);
-    // FIXME: position
-    more.insert(0, Positional::from_position((0, 0), TypedIdentifiers {
+    more.insert(0, Positional::from_position(type_name.position(), TypedIdentifiers {
         type_name: type_name.into_inner(),
         identifiers,
     }));
@@ -432,7 +432,7 @@ fn construct_input_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValu
     // read ( identifier )
     pop!(input);
     pop!(input);
-    Ok(ASTNodeValue::Statement(Statement::Input(identifier(&mut input))))
+    Ok(ASTNodeValue::Statement(Statement::Input(identifier!(input))))
 }
 
 fn construct_output_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
@@ -527,7 +527,7 @@ fn construct_factor(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String
 }
 
 fn construct_variable(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    let id = identifier(&mut input);
+    let id = identifier!(input);
     let visit = node_optional!(input, VariableVisit);
     Ok(ASTNodeValue::Variable(VariableRepresent { base: id, visit }))
 }
