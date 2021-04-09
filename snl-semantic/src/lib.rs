@@ -41,8 +41,14 @@ impl Semantic {
             } else {
                 // analyze whether original is valid
                 self.analyze_type(&t.inner().base());
-                // create new alias type
-                self.symbols.borrow_mut().insert(t.name().to_owned(), Symbol::Type(t.inner().base().inner().to_string()));
+
+                let mut symbols = self.symbols.borrow_mut();
+                // get real type of aliased type
+                let ty = Symbol::Type(t.inner().base().inner().to_string(|ty| -> Option<String>{
+                    symbols.query_type(ty).map(|r| r.to_string())
+                }));
+                // add new type alias
+                symbols.insert(t.name().to_owned(), ty);
             }
         }
 
@@ -57,7 +63,13 @@ impl Semantic {
                         Error::DuplicatedIdentifier(variable_name.inner().clone()),
                     ))
                 } else {
-                    self.symbols.borrow_mut().insert(variable_name.inner().clone(), Symbol::Variable(v.type_name.to_string()));
+                    let mut symbols = self.symbols.borrow_mut();
+                    // look for real type(deref alias)
+                    let ty = Symbol::Variable(v.type_name.to_string(|ty| -> Option<String>{
+                        symbols.query_type(ty).map(|r| r.to_string())
+                    }));
+                    // insert variable to symbol table
+                    symbols.insert(variable_name.inner().clone(), ty);
                 }
             }
         }
@@ -97,7 +109,7 @@ impl Semantic {
                     } else {
                         self.symbols.borrow_mut().insert(
                             param_name.inner().clone(),
-                            Symbol::Variable(param.definition.type_name.to_string()),
+                            Symbol::Variable(param.definition.type_name.to_string(|r| Some(r.to_string()))),
                         );
                     }
                 }
@@ -275,7 +287,7 @@ impl Semantic {
     fn analyze_expression_factor(&self, exp: &ExpressionFactor) -> String {
         match exp {
             ExpressionFactor::Bracket(exp) => self.analyze_expression(exp),
-            ExpressionFactor::Constant(_) => SNLType::Integer.to_string(),
+            ExpressionFactor::Constant(_) => SNLType::Integer.to_string(|r| Some(r.to_string())),
             ExpressionFactor::Variable(repr) => self.analyze_variable_represent(repr),
         }
     }

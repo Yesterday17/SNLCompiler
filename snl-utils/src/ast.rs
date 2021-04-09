@@ -163,16 +163,26 @@ impl From<SNLBaseType> for SNLType {
 /// `[`: array
 /// `{`: record
 /// `#`: custom
-impl ToString for SNLType {
-    fn to_string(&self) -> String {
-        match self {
+impl SNLType {
+    pub fn to_string<F>(&self, query: F) -> String
+        where F: Fn(&str) -> Option<String> {
+        let (result, _) = self.to_string_inner(query);
+        result
+    }
+
+    fn to_string_inner<F>(&self, mut query: F) -> (String, F)
+        where F: Fn(&str) -> Option<String>
+    {
+        let str = match self {
             SNLType::Integer => "integer".to_string(),
             SNLType::Char => "char".to_string(),
             SNLType::Array(array) => array.to_string(),
             SNLType::Record(record) => {
                 let mut fields: BTreeMap<String, BTreeSet<&str>> = Default::default();
                 for r in record.iter() {
-                    let ty = r.type_name.to_string();
+                    let ty = r.type_name.to_string_inner(query);
+                    query = ty.1;
+                    let ty = ty.0;
                     if !fields.contains_key(&ty) {
                         fields.insert(ty, r.identifiers.iter().map(|r| r.inner.as_str()).collect());
                     } else {
@@ -206,8 +216,14 @@ impl ToString for SNLType {
                 result += "}";
                 result
             }
-            SNLType::Others(others) => format!("#{}", others)
-        }
+            SNLType::Others(others) => {
+                match query(others) {
+                    Some(got) => got,
+                    None => format!("#{}", others),
+                }
+            }
+        };
+        (str, query)
     }
 }
 
@@ -375,21 +391,21 @@ mod tests {
 
     #[test]
     fn test_type_to_signature() {
-        assert_eq!(SNLType::Integer.to_string(), "integer");
-        assert_eq!(SNLType::Char.to_string(), "char");
-        assert_eq!(SNLType::Others("others".to_owned()).to_string(), "#others");
+        assert_eq!(SNLType::Integer.to_string(|r| Some(r.to_string())), "integer");
+        assert_eq!(SNLType::Char.to_string(|r| Some(r.to_string())), "char");
+        assert_eq!(SNLType::Others("others".to_owned()).to_string(|r| Some(r.to_string())), "#others");
         assert_eq!(SNLType::Array(SNLTypeArray {
             base: SNLBaseType::Integer,
             lower_bound: 0,
             upper_bound: 10,
-        }).to_string(), "[0..10;integer]");
+        }).to_string(|r| Some(r.to_string())), "[0..10;integer]");
         assert_eq!(SNLType::Record(vec![
             TypedIdentifiers {
                 type_name: SNLType::Integer,
                 identifiers: vec![Positional::dump("a".to_owned()), Positional::dump("c".to_owned())],
             },
             TypedIdentifiers { type_name: SNLType::Integer, identifiers: vec![Positional::dump("b".to_owned())] },
-        ]).to_string(), "{a,b,c:integer}");
+        ]).to_string(|r| Some(r.to_string())), "{a,b,c:integer}");
     }
 
     #[test]

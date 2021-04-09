@@ -63,3 +63,23 @@ impl<T> SymbolTable<T> {
         self.inner.last().unwrap().contains_key(key)
     }
 }
+
+impl SymbolTable<Symbol> {
+    pub fn query_type(&self, ty: &str) -> Option<&str> {
+        let ty = if ty.starts_with("#") {
+            &ty[1..]
+        } else {
+            ty
+        };
+        match self.query(ty) {
+            Some(Symbol::Type(ty)) => {
+                if ty.starts_with("#") {
+                    self.query_type(&ty)
+                } else {
+                    Some(ty.as_str())
+                }
+            }
+            _ => None,
+        }
+    }
+}
