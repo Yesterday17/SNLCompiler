@@ -150,8 +150,15 @@ impl Semantic {
     fn analyze_statement_list(&self, list: &StatementList) {
         for statement in list.iter() {
             match statement {
-                Statement::Conditional(_) => {}
-                Statement::Loop(_) => {}
+                Statement::Conditional(con) => {
+                    self.analyze_analyze_relation(&con.condition);
+                    self.analyze_statement_list(&con.body);
+                    self.analyze_statement_list(&con.else_body);
+                }
+                Statement::Loop(lo) => {
+                    self.analyze_analyze_relation(&lo.condition);
+                    self.analyze_statement_list(&lo.body);
+                }
                 Statement::Input(input) => {
                     match self.symbols.borrow().query(input) {
                         Some(symbol) => {
@@ -168,7 +175,7 @@ impl Semantic {
                                 p => {
                                     self.errors.borrow_mut().push(Positional::from_position(
                                         input.position(),
-                                        Error::UncompatableType("Variable".to_owned(), format!("{:?}", p)),
+                                        Error::UncompatableType { expected: "Variable".to_owned(), got: format!("{:?}", p) },
                                     ))
                                 }
                             }
@@ -211,7 +218,7 @@ impl Semantic {
                     } else if left_type != right_type {
                         self.errors.borrow_mut().push(Positional::from_position(
                             assign.value.left.position(),
-                            Error::AssignTypeMismatch(right_type, left_type),
+                            Error::AssignTypeMismatch { expected: left_type, got: right_type },
                         ))
                     }
                 }
@@ -225,7 +232,7 @@ impl Semantic {
                                         // parameter count mismatch
                                         self.errors.borrow_mut().push(Positional::from_position(
                                             call.position(),
-                                            Error::CallParameterCountMismatch(params.len(), call.params.len()),
+                                            Error::CallParameterCountMismatch { expected: params.len(), got: call.params.len() },
                                         ))
                                     } else {
                                         //
@@ -234,7 +241,7 @@ impl Semantic {
                                             if exp_type != "" && &exp_type != param_type {
                                                 self.errors.borrow_mut().push(Positional::from_position(
                                                     call.position(),
-                                                    Error::CallParameterTypeMismatch(param_type.to_string(), exp_type),
+                                                    Error::CallParameterTypeMismatch { expected: param_type.to_string(), got: exp_type },
                                                 ))
                                             }
                                         }
@@ -244,7 +251,7 @@ impl Semantic {
                                 p => {
                                     self.errors.borrow_mut().push(Positional::from_position(
                                         call.position(),
-                                        Error::UncompatableType("Procedure".to_owned(), format!("{:?}", p)),
+                                        Error::UncompatableType { expected: "Procedure".to_owned(), got: format!("{:?}", p) },
                                     ))
                                 }
                             }
@@ -296,7 +303,7 @@ impl Semantic {
                 if left_type != right_type {
                     self.errors.borrow_mut().push(Positional::from_position(
                         exp.left.position(),
-                        Error::UncompatableType(left_type.clone(), right_type),
+                        Error::UncompatableType { expected: left_type.clone(), got: right_type },
                     ))
                 }
             }
@@ -313,7 +320,7 @@ impl Semantic {
                 if left_type != right_type {
                     self.errors.borrow_mut().push(Positional::from_position(
                         exp.left.position(),
-                        Error::UncompatableType(left_type.clone(), right_type),
+                        Error::UncompatableType { expected: left_type.clone(), got: right_type },
                     ))
                 }
             }
@@ -388,7 +395,7 @@ impl Semantic {
                                         if index_type != "integer" {
                                             self.errors.borrow_mut().push(Positional::from_position(
                                                 index.left.position(),
-                                                Error::UncompatableType("integer".to_owned(), index_type),
+                                                Error::UncompatableType { expected: "integer".to_owned(), got: index_type },
                                             ));
                                             current_type.clear();
                                         } else {
@@ -431,6 +438,22 @@ impl Semantic {
                 ));
                 "".to_owned()
             }
+        }
+    }
+
+    fn analyze_analyze_relation(&self, rel: &RelationExpression) {
+        let left = self.analyze_expression(&rel.left);
+        let right = self.analyze_expression(&rel.right);
+        if left != "integer" && left != "char" {
+            self.errors.borrow_mut().push(Positional::from_position(
+                rel.left.left.position(),
+                Error::InvalidBoolExpression,
+            ))
+        } else if right != "integer" && right != "char" {
+            self.errors.borrow_mut().push(Positional::from_position(
+                rel.right.left.position(),
+                Error::InvalidBoolExpression,
+            ))
         }
     }
 }

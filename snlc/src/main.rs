@@ -85,5 +85,7 @@ fn main() {
 
     assert_eq!(mode, "semantic");
     let errors = Semantic::new(ast).analyze();
-    println!("{:?}", errors);
+    for error in errors {
+        println!("At line {}, column {}:\t{}", error.line, error.column, error.inner());
+    }
 }

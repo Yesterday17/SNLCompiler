@@ -38,8 +38,8 @@ procedure test1();      { Duplicated Identifier }                 { implemented 
   end
 
 begin
-  proc();               { Call Parameter Count Mismatch }
-  proc(ch);             { Call Parameter Type Mismatch }
+  proc();               { Call Parameter Count Mismatch }         { implemented }
+  proc(ch);             { Call Parameter Type Mismatch }          { implemented }
   proc(0);
   test1()               { Unexpected Type }                       { implemented }
 end.
