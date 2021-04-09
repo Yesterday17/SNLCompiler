@@ -1,5 +1,4 @@
 #[derive(Debug)]
-// (expected, got)
 pub enum Error {
     /// Identifier with the same name exists at current tier
     DuplicatedIdentifier(String),
@@ -9,8 +8,7 @@ pub enum Error {
     /// Unknown type used
     UndefinedType(String),
     /// Variable type `got` is different from `expected`
-    ///
-    /// `(got, expect)`
+    // (expected, got)
     UncompatableType(String, String),
 
     /// Variable represent only accepts variable symbol
@@ -31,13 +29,16 @@ pub enum Error {
     UndefinedRecordField(String),
 
     /// Different types between asssigner and assignee
+    // (expected, got)
     AssignTypeMismatch(String, String),
     /// Assignee can not accept any data
     InvalidAssignee,
 
     /// Procedure call parameter type mismatch
+    // (expected, got)
     CallParameterTypeMismatch(String, String),
     /// Procedure call parameter count mismatch
+    // (expected, got)
     CallParameterCountMismatch(usize, usize),
     InvalidBoolExpression,
 

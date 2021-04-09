@@ -297,7 +297,7 @@ impl Semantic {
                 if left_type != right_type {
                     self.errors.borrow_mut().push(Positional::from_position(
                         exp.left.position(),
-                        Error::UncompatableType(right_type, left_type.clone()),
+                        Error::UncompatableType(left_type.clone(), right_type),
                     ))
                 }
             }
@@ -314,7 +314,7 @@ impl Semantic {
                 if left_type != right_type {
                     self.errors.borrow_mut().push(Positional::from_position(
                         exp.left.position(),
-                        Error::UncompatableType(right_type, left_type.clone()),
+                        Error::UncompatableType(left_type.clone(), right_type),
                     ))
                 }
             }
@@ -389,7 +389,7 @@ impl Semantic {
                                         if index_type != "integer" {
                                             self.errors.borrow_mut().push(Positional::from_position(
                                                 index.left.position(),
-                                                Error::UncompatableType(index_type, "integer".to_owned()),
+                                                Error::UncompatableType("integer".to_owned(), index_type),
                                             ));
                                             current_type.clear();
                                         } else {
