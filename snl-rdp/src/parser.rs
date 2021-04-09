@@ -390,7 +390,6 @@ impl Parser {
     }
 
     fn parse_term(&self) -> Result<ExpressionTerm, String> {
-        let left_token = self.inner.current_token();
         let left = self.parse_factor()?;
         let (op, right) = match self.inner.current() {
             TokenType::Multiply | TokenType::Divide => {
@@ -403,13 +402,14 @@ impl Parser {
             _ => { (None, None) }
         };
         Ok(ExpressionTerm {
-            left: Positional::from_token(left_token, left),
+            left,
             op,
             right,
         })
     }
 
-    fn parse_factor(&self) -> Result<ExpressionFactor, String> {
+    fn parse_factor(&self) -> Result<Positional<ExpressionFactor>, String> {
+        let pos = self.inner.current_token().position();
         let inner = match self.inner.current() {
             TokenType::BracketOpen => {
                 self.inner.take(TokenType::BracketOpen)?;
@@ -431,7 +431,7 @@ impl Parser {
             }
             _ => return Err(format!("unexpected factor token: {:?}", self.inner.current()))
         };
-        Ok(inner)
+        Ok(Positional::from_position(pos, inner))
     }
 
     fn parse_param_list(&self) -> Result<PositionalVec<Param>, String> {

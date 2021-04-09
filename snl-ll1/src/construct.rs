@@ -36,9 +36,12 @@ pub enum ASTNodeValue {
 
     Operator(String),
     Variable(VariableRepresent),
-    Factor(ExpressionFactor),
+    Factor(Positional<ExpressionFactor>),
     Term(ExpressionTerm),
+    TermPostFix((String, Positional<Box<ExpressionTerm>>)),
+
     Expression(Expression),
+    ExpressionPostFix((String, Positional<Box<Expression>>)),
 }
 
 pub struct ConstructTable(HashMap<&'static str, fn(Vec<ASTNodeValue>) -> Result<ASTNodeValue, String>>);
@@ -119,6 +122,34 @@ impl ConstructTable {
 
 macro_rules! pop {
     ($v: ident) => {$v.pop().unwrap()};
+}
+
+macro_rules! token {
+    ($v: ident) => {
+        match pop!($v) {
+            ASTNodeValue::Terminal(token) => token,
+            _ => unreachable!()
+        }
+    };
+}
+
+macro_rules! node {
+    ($input: ident, $ext: ident) => {
+        match pop!($input) {
+            ASTNodeValue::$ext(result) => result,
+            _ => unreachable!()
+        }
+    };
+}
+
+macro_rules! node_optional {
+    ($input: ident, $ext: ident) => {
+        match pop!($input) {
+            ASTNodeValue::$ext(result) => Some(result),
+            ASTNodeValue::None         => None,
+            _ => unreachable!()
+        }
+    };
 }
 
 #[inline]
@@ -449,25 +480,56 @@ fn construct_rel_exp(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, Strin
 }
 
 fn construct_exp(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    let term = node!(input, Term);
+    let (op, right) = match node_optional!(input, ExpressionPostFix) {
+        Some((op, right)) => (Some(op), Some(right)),
+        None => (None, None),
+    };
+    Ok(ASTNodeValue::Expression(Expression {
+        left: Positional::from_position(term.left.position(), term),
+        op,
+        right,
+    }))
 }
 
 fn construct_exp_postfix(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    Ok(if input.is_empty() {
+        ASTNodeValue::None
+    } else {
+        let op = node!(input, Operator);
+        let exp = node!(input, Expression);
+        ASTNodeValue::ExpressionPostFix((op, Positional::from_position(exp.left.position(), Box::new(exp))))
+    })
 }
 
 fn construct_term(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    let factor = node!(input, Factor);
+    let (op, right) = match node_optional!(input, TermPostFix) {
+        Some((op, right)) => (Some(op), Some(right)),
+        None => (None, None),
+    };
+    Ok(ASTNodeValue::Term(ExpressionTerm {
+        left: factor,
+        op,
+        right,
+    }))
 }
 
 fn construct_term_postfix(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    Ok(if input.is_empty() {
+        ASTNodeValue::None
+    } else {
+        let op = node!(input, Operator);
+        let term = node!(input, Term);
+        ASTNodeValue::TermPostFix((op, Positional::from_position(term.left.position(), Box::new(term))))
+    })
 }
 
 fn construct_factor(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    let factor = match input.pop().unwrap() {
+    let (pos, factor) = match input.pop().unwrap() {
         ASTNodeValue::Terminal(token) => {
-            match token.token_type {
+            let pos = token.position();
+            let factor = match token.token_type {
                 TokenType::BracketOpen => {
                     match input.pop().unwrap() {
                         ASTNodeValue::Expression(exp) => ExpressionFactor::Bracket(Box::new(exp)),
@@ -476,12 +538,13 @@ fn construct_factor(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String
                 }
                 TokenType::Int => ExpressionFactor::Constant(u32::from_str(&token.image).unwrap()),
                 _ => unreachable!()
-            }
+            };
+            (pos, factor)
         }
-        ASTNodeValue::Variable(var) => ExpressionFactor::Variable(var),
+        ASTNodeValue::Variable(var) => (var.base.position(), ExpressionFactor::Variable(var)),
         _ => unreachable!()
     };
-    Ok(ASTNodeValue::Factor(factor))
+    Ok(ASTNodeValue::Factor(Positional::from_position(pos, factor)))
 }
 
 fn construct_variable(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
