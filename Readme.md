@@ -11,10 +11,10 @@ SNL Compiler frontend implemented in rust and c(with ffi).
     - [x] Support all SNL syntax rules
 - [ ] snl-ll1: LL(1) parser written in Rust.
 - [ ] snl-semantic: Semantic Analysis part written in Rust
-    - [ ] Construct symbol table
+    - [x] Construct symbol table
         - [x] Type
         - [x] Variable
-        - [ ] Procedure
+        - [x] Procedure
     - [ ] Semantic errors
         - [x] Duplicated identifier
         - [x] Undefined identifier
@@ -28,8 +28,8 @@ SNL Compiler frontend implemented in rust and c(with ffi).
         - [x] Undefined record field
         - [x] Assign type mismatch
         - [x] Invalid assignee
-        - [ ] Call parameter type mismatch
-        - [ ] Call parameter count mismatch
+        - [x] Call parameter type mismatch
+        - [x] Call parameter count mismatch
         - [ ] Invalid bool expression
         - [x] Invalid read type
         - [x] Invalid write type

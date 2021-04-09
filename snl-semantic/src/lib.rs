@@ -75,6 +75,18 @@ impl Semantic {
         }
 
         for p in declare.procedure_declare.iter() {
+            // procedure params type signature
+            let mut params: Vec<String> = Default::default();
+            for param in p.params.iter() {
+                // param type string
+                let param_type = param.definition.type_name.to_string(|r| Some(r.to_string()));
+
+                // add to param list
+                for _ in param.definition.identifiers.iter() {
+                    params.push(param_type.clone())
+                }
+            }
+
             // check procedure name
             if self.symbols.borrow().has_own_property(p.name()) {
                 self.errors.borrow_mut().push(Positional::from_position(
@@ -83,22 +95,27 @@ impl Semantic {
                 ));
             } else {
                 // add procedure to Symbol Table
-                self.symbols.borrow_mut().insert(p.name().to_string(), Symbol::Procedure(/* TODO */));
+                self.symbols.borrow_mut().insert(p.name().to_string(), Symbol::Procedure(params.clone()));
             }
 
             // start analyzing current procedure
             self.symbols.borrow_mut().step_in();
 
             // add procedure itself to symbol table of current tier
-            self.symbols.borrow_mut().insert(p.name().to_string(), Symbol::Procedure(/* TODO */));
+            self.symbols.borrow_mut().insert(p.name().to_string(), Symbol::Procedure(params));
 
             // parameters
+            let mut params: Vec<String> = Default::default();
             for param in p.params.iter() {
                 // param type
                 self.analyze_type(&Positional::from_position(
                     param.position(),
                     &param.definition.type_name,
                 ));
+
+                // param type string
+                let param_type = param.definition.type_name.to_string(|r| Some(r.to_string()));
+
                 // param name
                 for param_name in param.definition.identifiers.iter() {
                     if self.symbols.borrow().has_own_property(param_name.as_str()) {
@@ -109,9 +126,12 @@ impl Semantic {
                     } else {
                         self.symbols.borrow_mut().insert(
                             param_name.inner().clone(),
-                            Symbol::Variable(param.definition.type_name.to_string(|r| Some(r.to_string()))),
+                            Symbol::Variable(param_type.clone()),
                         );
                     }
+
+                    // add to param list
+                    params.push(param_type.clone())
                 }
                 // TODO param.inner
             }
@@ -201,7 +221,26 @@ impl Semantic {
                         Some(symbol) => {
                             match symbol {
                                 // TODO: check procedure signature
-                                Symbol::Procedure() => {}
+                                Symbol::Procedure(params) => {
+                                    if params.len() != call.params.len() {
+                                        // parameter count mismatch
+                                        self.errors.borrow_mut().push(Positional::from_position(
+                                            call.position(),
+                                            Error::CallParameterCountMismatch(params.len(), call.params.len()),
+                                        ))
+                                    } else {
+                                        //
+                                        for (exp, param_type) in call.params.iter().zip(params) {
+                                            let exp_type = self.analyze_expression(exp);
+                                            if exp_type != "" && &exp_type != param_type {
+                                                self.errors.borrow_mut().push(Positional::from_position(
+                                                    call.position(),
+                                                    Error::CallParameterTypeMismatch(param_type.to_string(), exp_type),
+                                                ))
+                                            }
+                                        }
+                                    }
+                                }
                                 // idenfier called is not procedure
                                 p => {
                                     self.errors.borrow_mut().push(Positional::from_position(
@@ -367,7 +406,7 @@ impl Semantic {
                         }
                         current_type
                     }
-                    Symbol::Procedure() => {
+                    Symbol::Procedure(_) => {
                         // procedure is not a valid **variable** represent
                         self.errors.borrow_mut().push(Positional::from_position(
                             repr.base.position(),

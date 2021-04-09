@@ -4,7 +4,7 @@ use std::cmp::min;
 #[derive(Debug)]
 pub enum Symbol {
     Variable(String),
-    Procedure(/* TODO */),
+    Procedure(Vec<String>),
     Type(String),
 }
 

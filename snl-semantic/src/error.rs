@@ -1,4 +1,5 @@
 #[derive(Debug)]
+// (expected, got)
 pub enum Error {
     /// Identifier with the same name exists at current tier
     DuplicatedIdentifier(String),
@@ -30,16 +31,14 @@ pub enum Error {
     UndefinedRecordField(String),
 
     /// Different types between asssigner and assignee
-    ///
-    /// `(got, expected)`
     AssignTypeMismatch(String, String),
     /// Assignee can not accept any data
     InvalidAssignee,
 
     /// Procedure call parameter type mismatch
-    CallParameterTypeMismatch,
+    CallParameterTypeMismatch(String, String),
     /// Procedure call parameter count mismatch
-    CallParameterCountMismatch,
+    CallParameterCountMismatch(usize, usize),
     InvalidBoolExpression,
 
     /// Read only accepts Integer and Char
