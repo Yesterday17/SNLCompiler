@@ -26,8 +26,9 @@ pub enum ASTNodeValue {
     IdentifierList(PositionalVec<String>),
     ProcedureDeclaration(PositionalVec<ProcedureDeclare>),
 
-    Param(Param),
-    ParamList(Vec<Param>),
+    Param(Positional<Param>),
+    ParamList(PositionalVec<Param>),
+    FieldDecList(Vec<TypedIdentifiers>),
 
     Statement(Statement),
     StatementList(StatementList),
@@ -125,7 +126,14 @@ impl ConstructTable {
 }
 
 macro_rules! pop {
-    ($v: ident) => {$v.pop().unwrap()};
+    ($v: ident) => {
+        $v.pop().unwrap()
+    };
+    ($v: ident, $t: expr) => {
+        for _ in 0..$t {
+            $v.pop().unwrap();
+        }
+    };
 }
 
 macro_rules! token {
@@ -242,7 +250,7 @@ fn construct_type_name(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, Str
     Ok(ASTNodeValue::TypeName(match pop!(input) {
         ASTNodeValue::BaseType(ty) => Positional::from_position(ty.position(), ty.into_inner().into()),
         ASTNodeValue::ArrayType(ty) => Positional::from_position(ty.position(), SNLType::Array(ty.into_inner())),
-        // TODO: RecordType
+        ASTNodeValue::RecordType(ty) => Positional::from_position(ty[0].type_name.position(), SNLType::Record(ty)),
         ASTNodeValue::Terminal(token) => {
             Positional::from_position(token.position(), SNLType::Others(token.image))
         }
@@ -284,15 +292,29 @@ fn construct_int(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
 }
 
 fn construct_record_type(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    pop!(input);
+    let list = node!(input, FieldDecList);
+    Ok(ASTNodeValue::RecordType(list))
 }
 
 fn construct_field_dec_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    let type_name = node!(input, TypeName);
+    let identifiers = node!(input, IdentifierList);
+    pop!(input);
+    let mut list = node_default!(input, FieldDecList);
+    list.insert(0, TypedIdentifiers {
+        type_name,
+        identifiers,
+    });
+    Ok(ASTNodeValue::FieldDecList(list))
 }
 
 fn construct_field_dec_list_more(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    if input.is_empty() {
+        Ok(ASTNodeValue::None)
+    } else {
+        Ok(pop!(input))
+    }
 }
 
 fn construct_field_dec_type(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
@@ -346,7 +368,21 @@ fn construct_proc_dec(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, Stri
 }
 
 fn construct_proc_declaration(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    let start = token!(input);
+    let name = node!(input, String);
+    pop!(input);
+    let params = node_default!(input, ParamList);
+    pop!(input, 2);
+    let declare = node!(input, DeclarePart);
+    let body = node!(input, StatementList);
+    let mut list = node_default!(input, ProcedureDeclaration);
+    list.insert(0, Positional::from_position(start.position(), ProcedureDeclare {
+        name,
+        params,
+        declare: Box::new(declare),
+        body,
+    }));
+    Ok(ASTNodeValue::ProcedureDeclaration(list))
 }
 
 fn construct_proc_name(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
@@ -378,18 +414,20 @@ fn construct_param_list_more(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValu
 
 fn construct_param(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     let is_var = input.len() == 3;
-    if is_var {
-        pop!(input);
-    }
+    let pos = if is_var {
+        Some(token!(input).position())
+    } else {
+        None
+    };
     let type_name = node!(input, TypeName);
     let identifiers = node!(input, IdentifierList);
-    Ok(ASTNodeValue::Param(Param {
+    Ok(ASTNodeValue::Param(Positional::from_position(pos.unwrap_or(type_name.position()), Param {
         is_var,
         definition: TypedIdentifiers {
             type_name,
             identifiers,
         },
-    }))
+    })))
 }
 
 fn construct_proc_dec_part(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
@@ -575,9 +613,7 @@ fn construct_variable(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, Stri
 }
 
 fn construct_variable_visit(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    // field
     let dot = node_optional!(input, VariableVisitDot);
-    // index
     let sqbr = node_optional!(input, VariableVisitSqbr);
 
     Ok(if let (None, None) = (&dot, &sqbr) {
@@ -588,11 +624,22 @@ fn construct_variable_visit(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue
 }
 
 fn construct_variable_visit_field(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    Ok(if input.is_empty() {
+        ASTNodeValue::None
+    } else {
+        pop!(input);
+        ASTNodeValue::VariableVisitDot(identifier!(input))
+    })
 }
 
 fn construct_variable_visit_index(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    Ok(if input.is_empty() {
+        ASTNodeValue::None
+    } else {
+        pop!(input);
+        let exp = node!(input, Expression);
+        ASTNodeValue::VariableVisitSqbr(Box::new(exp))
+    })
 }
 
 fn construct_op(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
