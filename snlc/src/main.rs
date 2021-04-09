@@ -26,8 +26,8 @@ fn main() {
             .required(false)
             .takes_value(true)
             // Recursive descent parser or LL(1) parser
-            .possible_values(&["rdp-rs", "ll1-rs", "rdp-c", "ll1-c"])
-            .default_value("rdp-rs")
+            .possible_values(&["rdp", "ll1"])
+            .default_value("rdp")
         )
         .arg(Arg::with_name("filename")
             .required(true)
@@ -67,16 +67,16 @@ fn main() {
     }
 
     let ast = match matches.value_of("parser") {
-        Some("rdp-rs") => {
+        Some("rdp") => {
             let parser = snl_rdp::Parser::new(tokens);
             parser.parse().expect("Failed to parse")
         }
-        Some("ll1-rs")=> {
+        Some("ll1") => {
             let mut parser = snl_ll1::Parser::new(tokens);
             parser.parse().expect("Failed to parse")
         }
-        Some(_) => unimplemented!(),
-        None => panic!("no parser specified")
+        None => panic!("no parser specified"),
+        _ => unreachable!(),
     };
     if mode == "parse" {
         println!("{}", serde_json::to_string(&ast).unwrap());
