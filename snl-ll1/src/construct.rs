@@ -9,7 +9,7 @@ pub enum ASTNodeValue {
 
     Terminal(Token),
     Int(usize),
-    String(String),
+    String(Positional<String>),
 
     Program(Positional<Program>),
     ProgramHead(Positional<String>),
@@ -232,7 +232,7 @@ fn construct_type_dec_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue,
         base.position(),
         TypeDeclare {
             base,
-            name,
+            name: name.into_inner(),
         },
     ));
     Ok(ASTNodeValue::TypeDeclaration(more))
@@ -243,7 +243,7 @@ fn construct_type_dec_list_more(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeV
 }
 
 fn construct_type_id(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    Ok(ASTNodeValue::String(token!(input).image))
+    Ok(ASTNodeValue::String(identifier!(input)))
 }
 
 fn construct_type_name(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
@@ -377,7 +377,7 @@ fn construct_proc_declaration(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeVal
     let body = node!(input, StatementList);
     let mut list = node_default!(input, ProcedureDeclaration);
     list.insert(0, Positional::from_position(start.position(), ProcedureDeclare {
-        name,
+        name: name.into_inner(),
         params,
         declare: Box::new(declare),
         body,
@@ -386,7 +386,7 @@ fn construct_proc_declaration(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeVal
 }
 
 fn construct_proc_name(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    Ok(ASTNodeValue::String(identifier!(input).into_inner()))
+    Ok(ASTNodeValue::String(identifier!(input)))
 }
 
 fn construct_param_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
@@ -482,7 +482,7 @@ fn construct_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, Str
                         value: exp,
                     }))
                 }
-                _ => unreachable!()
+                _r => unreachable!()
             }
         }
         _ => unreachable!()
@@ -509,34 +509,48 @@ fn construct_loop_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue
 }
 
 fn construct_input_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    // read ( identifier )
-    pop!(input);
-    pop!(input);
+    pop!(input, 2);
     Ok(ASTNodeValue::Statement(Statement::Input(identifier!(input))))
 }
 
 fn construct_output_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    // write ( exp )
-    pop!(input);
-    pop!(input);
+    pop!(input, 2);
     let exp = node!(input, Expression);
     Ok(ASTNodeValue::Statement(Statement::Output(exp)))
 }
 
 fn construct_return_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    pop!(input, 2);
+    let exp = node!(input, Expression);
+    Ok(ASTNodeValue::Statement(Statement::Return(exp)))
 }
 
 fn construct_call_statement_rest(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    pop!(input);
+    Ok(ASTNodeValue::CallStatementRest(node_default!(input, CallStatementRest)))
 }
 
 fn construct_call_statement_rest_exp(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    Ok(if input.is_empty() {
+        ASTNodeValue::None
+    } else {
+        let exp = node!(input, Expression);
+        let mut list = node_default!(input, CallStatementRest);
+        list.insert(0, exp);
+        ASTNodeValue::CallStatementRest(list)
+    })
 }
 
 fn construct_comma_exp(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    Ok(if input.is_empty() {
+        ASTNodeValue::None
+    } else {
+        pop!(input);
+        let exp = node!(input, Expression);
+        let mut list = node_default!(input, CallStatementRest);
+        list.insert(0, exp);
+        ASTNodeValue::CallStatementRest(list)
+    })
 }
 
 fn construct_rel_exp(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
