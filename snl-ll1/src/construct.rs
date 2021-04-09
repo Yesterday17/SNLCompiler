@@ -142,6 +142,16 @@ macro_rules! node {
     };
 }
 
+macro_rules! node_default {
+    ($input: ident, $ext: ident) => {
+        match pop!($input) {
+            ASTNodeValue::$ext(result) => result,
+            ASTNodeValue::None         => Default::default(),
+            _ => unreachable!()
+        }
+    };
+}
+
 macro_rules! node_optional {
     ($input: ident, $ext: ident) => {
         match pop!($input) {
@@ -153,16 +163,8 @@ macro_rules! node_optional {
 }
 
 #[inline]
-fn token(input: &mut Vec<ASTNodeValue>) -> Token {
-    match input.pop().unwrap() {
-        ASTNodeValue::Terminal(token) => token,
-        _ => unreachable!()
-    }
-}
-
-#[inline]
 fn identifier(input: &mut Vec<ASTNodeValue>) -> Positional<String> {
-    Positional::from_token_image_raw(token(input))
+    Positional::from_token_image_raw(token!(input))
 }
 
 fn construct_program(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
@@ -175,26 +177,13 @@ fn construct_program_head(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, 
 }
 
 fn construct_program_name(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    let token = token(&mut input);
-    Ok(ASTNodeValue::ProgramHead(token.image))
+    Ok(ASTNodeValue::ProgramHead(token!(input).image))
 }
 
 fn construct_declare_part(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    let type_declare = match input.pop().unwrap() {
-        ASTNodeValue::TypeDeclaration(dec) => dec,
-        ASTNodeValue::None => Default::default(),
-        _ => unreachable!()
-    };
-    let variable_declare = match input.pop().unwrap() {
-        ASTNodeValue::VarDeclaration(dec) => dec,
-        ASTNodeValue::None => Default::default(),
-        _ => unreachable!()
-    };
-    let procedure_declare = match input.pop().unwrap() {
-        ASTNodeValue::ProcedureDeclaration(dec) => dec,
-        ASTNodeValue::None => Default::default(),
-        _ => unreachable!()
-    };
+    let type_declare = node_default!(input, TypeDeclaration);
+    let variable_declare = node_default!(input, VarDeclaration);
+    let procedure_declare = node_default!(input, ProcedureDeclaration);
     Ok(ASTNodeValue::DeclarePart(ProgramDeclare {
         type_declare,
         variable_declare,
@@ -203,36 +192,22 @@ fn construct_declare_part(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, 
 }
 
 fn construct_type_dec(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    let result = match input.pop().unwrap() {
-        ASTNodeValue::TypeDeclaration(dec) => dec,
-        ASTNodeValue::None => Default::default(),
-        _ => unreachable!()
-    };
+    let result = node_default!(input, TypeDeclaration);
     Ok(ASTNodeValue::TypeDeclaration(result))
 }
 
 fn construct_type_declaration(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     pop!(input);
-    Ok(input.pop().unwrap())
+    Ok(pop!(input))
 }
 
 fn construct_type_dec_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    let name = match input.pop().unwrap() {
-        ASTNodeValue::TypeId(id) => id,
-        _ => unreachable!()
-    };
+    let name = node!(input, TypeId);
     pop!(input);
-    let base = match input.pop().unwrap() {
-        ASTNodeValue::TypeName(name) => name,
-        _ => unreachable!()
-    };
+    let base = node!(input,TypeName);
     pop!(input);
 
-    let mut more = match input.pop().unwrap() {
-        ASTNodeValue::TypeDeclaration(list) => list,
-        ASTNodeValue::None => Default::default(),
-        _ => unreachable!()
-    };
+    let mut more = node_default!(input, TypeDeclaration);
     more.insert(0, Positional::from_position(
         base.position(),
         TypeDeclare {
@@ -244,16 +219,15 @@ fn construct_type_dec_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue,
 }
 
 fn construct_type_dec_list_more(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    Ok(input.pop().unwrap())
+    Ok(pop!(input))
 }
 
 fn construct_type_id(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    let token = token(&mut input);
-    Ok(ASTNodeValue::TypeId(token.image))
+    Ok(ASTNodeValue::TypeId(token!(input).image))
 }
 
 fn construct_type_name(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    Ok(ASTNodeValue::TypeName(match input.pop().unwrap() {
+    Ok(ASTNodeValue::TypeName(match pop!(input) {
         ASTNodeValue::BaseType(ty) => Positional::from_position(ty.position(), ty.into_inner().into()),
         ASTNodeValue::StructureType(ty) => ty,
         ASTNodeValue::Terminal(token) => {
@@ -264,7 +238,7 @@ fn construct_type_name(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, Str
 }
 
 fn construct_base_type(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    let token = token(&mut input);
+    let token = token!(input);
     Ok(ASTNodeValue::BaseType(Positional::from_position(token.position(), match token.token_type {
         TokenType::Integer => SNLBaseType::Integer,
         TokenType::Char => SNLBaseType::Char,
@@ -306,7 +280,7 @@ fn construct_field_dec_type(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue
 
 fn construct_identifier_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     let mut result: PositionalVec<String> = vec![identifier(&mut input)];
-    match input.pop().unwrap() {
+    match pop!(input) {
         ASTNodeValue::IdentifierList(mut list) => {
             result.append(&mut list);
         }
@@ -321,29 +295,19 @@ fn construct_identifier_list_more(mut input: Vec<ASTNodeValue>) -> Result<ASTNod
 }
 
 fn construct_var_dec(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    Ok(input.pop().unwrap())
+    Ok(pop!(input))
 }
 
 fn construct_var_declaration(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     pop!(input);
-    Ok(input.pop().unwrap())
+    Ok(pop!(input))
 }
 
 fn construct_var_dec_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    let type_name = match input.pop().unwrap() {
-        ASTNodeValue::TypeName(n) => n,
-        _ => unreachable!()
-    };
-    let identifiers = match input.pop().unwrap() {
-        ASTNodeValue::IdentifierList(l) => l,
-        _ => unreachable!()
-    };
+    let type_name = node!(input, TypeName);
+    let identifiers = node!(input, IdentifierList);
     pop!(input);
-    let mut more = match input.pop().unwrap() {
-        ASTNodeValue::VarDeclaration(dec) => dec,
-        ASTNodeValue::None => Default::default(),
-        _ => unreachable!()
-    };
+    let mut more = node_default!(input, VarDeclaration);
     // FIXME: position
     more.insert(0, Positional::from_position((0, 0), TypedIdentifiers {
         type_name: type_name.into_inner(),
@@ -353,15 +317,11 @@ fn construct_var_dec_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, 
 }
 
 fn construct_var_dec_list_more(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    Ok(input.pop().unwrap())
+    Ok(pop!(input))
 }
 
 fn construct_proc_dec(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    let result = match input.pop().unwrap() {
-        ASTNodeValue::ProcedureDeclaration(dec) => dec,
-        ASTNodeValue::None => Default::default(),
-        _ => unreachable!()
-    };
+    let result = node_default!(input, ProcedureDeclaration);
     Ok(ASTNodeValue::ProcedureDeclaration(result))
 }
 
@@ -530,12 +490,7 @@ fn construct_factor(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String
         ASTNodeValue::Terminal(token) => {
             let pos = token.position();
             let factor = match token.token_type {
-                TokenType::BracketOpen => {
-                    match input.pop().unwrap() {
-                        ASTNodeValue::Expression(exp) => ExpressionFactor::Bracket(Box::new(exp)),
-                        _ => unreachable!()
-                    }
-                }
+                TokenType::BracketOpen => ExpressionFactor::Bracket(Box::new(node!(input, Expression))),
                 TokenType::Int => ExpressionFactor::Constant(u32::from_str(&token.image).unwrap()),
                 _ => unreachable!()
             };
@@ -549,29 +504,15 @@ fn construct_factor(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String
 
 fn construct_variable(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     let id = identifier(&mut input);
-    let visit = match input.pop().unwrap() {
-        ASTNodeValue::VariableVisit(visit) => {
-            Some(visit)
-        }
-        ASTNodeValue::None => None,
-        _ => unreachable!()
-    };
+    let visit = node_optional!(input, VariableVisit);
     Ok(ASTNodeValue::Variable(VariableRepresent { base: id, visit }))
 }
 
 fn construct_variable_visit(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     // field
-    let dot = match input.pop().unwrap() {
-        ASTNodeValue::VariableVisitDot(dot) => Some(dot),
-        ASTNodeValue::None => None,
-        _ => unreachable!()
-    };
+    let dot = node_optional!(input, VariableVisitDot);
     // index
-    let sqbr = match input.pop().unwrap() {
-        ASTNodeValue::VariableVisitSqbr(sqbr) => Some(sqbr),
-        ASTNodeValue::None => None,
-        _ => unreachable!()
-    };
+    let sqbr = node_optional!(input, VariableVisitSqbr);
 
     Ok(if let (None, None) = (&dot, &sqbr) {
         ASTNodeValue::None
@@ -589,5 +530,5 @@ fn construct_variable_visit_index(mut input: Vec<ASTNodeValue>) -> Result<ASTNod
 }
 
 fn construct_op(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    Ok(ASTNodeValue::Operator(token(&mut input).image))
+    Ok(ASTNodeValue::Operator(token!(input).image))
 }
