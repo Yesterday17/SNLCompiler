@@ -47,6 +47,7 @@ pub enum ASTNodeValue {
 
     Expression(Expression),
     ExpressionPostFix((String, Positional<Box<Expression>>)),
+    RelationExpression(RelationExpression),
 }
 
 pub struct ConstructTable(HashMap<&'static str, fn(Vec<ASTNodeValue>) -> Result<ASTNodeValue, String>>);
@@ -317,7 +318,7 @@ fn construct_field_dec_list_more(mut input: Vec<ASTNodeValue>) -> Result<ASTNode
     }
 }
 
-fn construct_field_dec_type(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
+fn construct_field_dec_type(input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
     construct_type_name(input)
 }
 
@@ -501,11 +502,25 @@ fn construct_assignment_rest(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValu
 }
 
 fn construct_conditional_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    pop!(input);
+    let condition = node!(input, RelationExpression);
+    pop!(input);
+    let body = node!(input, StatementList);
+    pop!(input);
+    let else_body = node!(input, StatementList);
+    Ok(ASTNodeValue::Statement(Statement::Conditional(ConditionalStatement {
+        condition,
+        body,
+        else_body,
+    })))
 }
 
 fn construct_loop_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    pop!(input);
+    let condition = node!(input, RelationExpression);
+    pop!(input);
+    let body = node!(input, StatementList);
+    Ok(ASTNodeValue::Statement(Statement::Loop(LoopStatement { condition, body })))
 }
 
 fn construct_input_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
@@ -554,7 +569,14 @@ fn construct_comma_exp(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, Str
 }
 
 fn construct_rel_exp(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    let left = node!(input, Expression);
+    let op = node!(input, Operator);
+    let right = node!(input, Expression);
+    Ok(ASTNodeValue::RelationExpression(RelationExpression {
+        left,
+        op,
+        right,
+    }))
 }
 
 fn construct_exp(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {

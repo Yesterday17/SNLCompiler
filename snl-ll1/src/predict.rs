@@ -149,7 +149,7 @@ impl Default for PredictTable {
         result.inner.insert(PredictKey::from(("AssignmentRest", Fi)), vec![NonTerminal("VariableVisit"), Terminal(Assign), NonTerminal("Exp")]);
         result.inner.insert(PredictKey::from(("AssignmentRest", EndWhile)), vec![NonTerminal("VariableVisit"), Terminal(Assign), NonTerminal("Exp")]);
         result.inner.insert(PredictKey::from(("AssignmentRest", Dot)), vec![NonTerminal("VariableVisit"), Terminal(Assign), NonTerminal("Exp")]);
-        result.inner.insert(PredictKey::from(("ConditionalStatement", Program)), vec![Terminal(If), NonTerminal("RelExp"), Terminal(Then), NonTerminal("StatementList"), Terminal(Else), NonTerminal("StatementList"), Terminal(Fi)]);
+        result.inner.insert(PredictKey::from(("ConditionalStatement", If)), vec![Terminal(If), NonTerminal("RelExp"), Terminal(Then), NonTerminal("StatementList"), Terminal(Else), NonTerminal("StatementList"), Terminal(Fi)]);
         result.inner.insert(PredictKey::from(("LoopStatement", While)), vec![Terminal(While), NonTerminal("RelExp"), Terminal(Do), NonTerminal("StatementList"), Terminal(EndWhile)]);
         result.inner.insert(PredictKey::from(("InputStatement", Read)), vec![Terminal(Read), Terminal(BracketOpen), Terminal(Identifier), Terminal(BracketClose)]);
         result.inner.insert(PredictKey::from(("OutputStatement", Write)), vec![Terminal(Write), Terminal(BracketOpen), NonTerminal("Exp"), Terminal(BracketClose)]);

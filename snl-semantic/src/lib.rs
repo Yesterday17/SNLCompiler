@@ -453,7 +453,7 @@ impl Semantic {
                     repr.base.position(),
                     Error::UndefinedIdentifier(repr.base.inner().clone()),
                 ));
-                "".to_owned()
+                String::new()
             }
         }
     }
