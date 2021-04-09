@@ -39,7 +39,7 @@ impl Parser {
 
     pub fn parse(&mut self) -> Result<Positional<Program>, String> {
         loop {
-            if self.stack.len() == 0 && self.stack_offset.len() == 0 {
+            if self.stack.is_empty() && self.stack_offset.is_empty() {
                 break;
             }
             if let Some(offset) = self.stack_offset.last() {
@@ -101,6 +101,9 @@ impl Parser {
                 None => return Err("Unexpected EOF".to_owned())
             }
         }
-        Err(format!(""))
+        Ok(match self.params.pop().unwrap() {
+            ASTNodeValue::Program(p) => p,
+            _ => unreachable!()
+        })
     }
 }

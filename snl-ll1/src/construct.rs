@@ -9,8 +9,8 @@ pub enum ASTNodeValue {
 
     Terminal(Token),
 
-    Program(Program),
-    ProgramHead(String),
+    Program(Positional<Program>),
+    ProgramHead(Positional<String>),
 
     DeclarePart(ProgramDeclare),
 
@@ -20,14 +20,16 @@ pub enum ASTNodeValue {
     BaseType(Positional<SNLBaseType>),
     StructureType(Positional<SNLType>),
     ArrayType(Positional<SNLTypeArray>),
-    Low(usize),
-    Top(usize),
+    Int(usize),
     RecordType(SNLTypeRecord),
 
     VarDeclaration(PositionalVec<TypedIdentifiers>),
     IdentifierList(PositionalVec<String>),
     ProcedureDeclaration(PositionalVec<ProcedureDeclare>),
+
     Statement(Statement),
+    StatementList(StatementList),
+
     VariableVisit(VariableVisit),
     VariableVisitDot(Positional<String>),
     VariableVisitSqbr(Box<Expression>),
@@ -62,8 +64,8 @@ impl Default for ConstructTable {
         table.0.insert("BaseType", construct_base_type);
         table.0.insert("StructureType", construct_structure_type);
         table.0.insert("ArrayType", construct_array_type);
-        table.0.insert("Low", construct_low);
-        table.0.insert("Top", construct_top);
+        table.0.insert("Low", construct_int);
+        table.0.insert("Top", construct_int);
         table.0.insert("RecordType", construct_record_type);
         table.0.insert("FieldDecList", construct_field_dec_list);
         table.0.insert("FieldDecListMore", construct_field_dec_list_more);
@@ -168,7 +170,14 @@ fn identifier(input: &mut Vec<ASTNodeValue>) -> Positional<String> {
 }
 
 fn construct_program(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    let name = node!(input, ProgramHead);
+    let declare = node!(input, DeclarePart);
+    let body = node!(input, StatementList);
+    Ok(ASTNodeValue::Program(Positional::from_position(name.position(), Program {
+        name: name.into_inner(),
+        declare,
+        body,
+    })))
 }
 
 fn construct_program_head(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
@@ -177,7 +186,7 @@ fn construct_program_head(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, 
 }
 
 fn construct_program_name(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    Ok(ASTNodeValue::ProgramHead(token!(input).image))
+    Ok(ASTNodeValue::ProgramHead(identifier(&mut input)))
 }
 
 fn construct_declare_part(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
@@ -254,12 +263,8 @@ fn construct_array_type(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, St
     unimplemented!()
 }
 
-fn construct_low(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
-}
-
-fn construct_top(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+fn construct_int(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
+    Ok(ASTNodeValue::Int(usize::from_str(&token!(input).image).unwrap()))
 }
 
 fn construct_record_type(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
@@ -354,15 +359,27 @@ fn construct_proc_body(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, Str
 }
 
 fn construct_program_body(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    pop!(input);
+    Ok(pop!(input))
 }
 
 fn construct_statement_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    let stmt = node!(input, Statement);
+    let mut list = node_default!(input, StatementList);
+    list.insert(0, stmt);
+    Ok(ASTNodeValue::StatementList(list))
 }
 
 fn construct_more_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    if input.is_empty() {
+        Ok(ASTNodeValue::None)
+    } else {
+        pop!(input);
+        let stmt = node!(input, Statement);
+        let mut list = node_default!(input, StatementList);
+        list.insert(0, stmt);
+        Ok(ASTNodeValue::StatementList(list))
+    }
 }
 
 fn construct_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
@@ -393,11 +410,14 @@ fn construct_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, Str
 }
 
 fn construct_ass_call(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    Ok(pop!(input))
 }
 
 fn construct_assignment_rest(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    let visit = node_optional!(input, VariableVisit);
+    pop!(input);
+    let exp = node!(input, Expression);
+    Ok(ASTNodeValue::AssignStatementRest((visit, exp)))
 }
 
 fn construct_conditional_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
@@ -416,7 +436,11 @@ fn construct_input_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValu
 }
 
 fn construct_output_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    // write ( exp )
+    pop!(input);
+    pop!(input);
+    let exp = node!(input, Expression);
+    Ok(ASTNodeValue::Statement(Statement::Output(exp)))
 }
 
 fn construct_return_statement(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
