@@ -31,7 +31,7 @@ impl Parser {
 
     fn parse_program_head(&self) -> Result<Positional<String>, String> {
         let program = self.inner.take(TokenType::Program)?;
-        let program_name = self.inner.take(TokenType::Identifer)?.image.clone();
+        let program_name = self.inner.take(TokenType::Identifier)?.image.clone();
         Ok(Positional::from_token(program, program_name))
     }
 
@@ -65,7 +65,7 @@ impl Parser {
         let mut declare = Vec::new();
         self.inner.take(TokenType::Type)?;
         loop {
-            let name = self.inner.take(TokenType::Identifer)?;
+            let name = self.inner.take(TokenType::Identifier)?;
             self.inner.take(TokenType::Equal)?;
             let inner_type = self.parse_type_name(true)?;
             self.inner.take(TokenType::Semicolon)?;
@@ -73,7 +73,7 @@ impl Parser {
                 base: inner_type,
                 name: name.image.clone(),
             }));
-            if TokenType::Identifer != self.inner.current() {
+            if TokenType::Identifier != self.inner.current() {
                 break;
             }
         }
@@ -106,7 +106,7 @@ impl Parser {
         let mut result = PositionalVec::new();
         loop {
             self.inner.take(TokenType::Procedure)?;
-            let name = self.inner.take(TokenType::Identifer)?;
+            let name = self.inner.take(TokenType::Identifier)?;
             self.inner.take(TokenType::BracketOpen)?;
             let params = self.parse_param_list()?;
             self.inner.take(TokenType::BracketClose)?;
@@ -148,7 +148,7 @@ impl Parser {
                 TokenType::Record => {
                     return Ok(Positional::from_position(next_pos, SNLType::Record(self.parse_record_type()?)));
                 }
-                TokenType::Identifer => {
+                TokenType::Identifier => {
                     let name = self.inner.current_token().image.clone();
                     self.inner.move_next();
                     return Ok(Positional::from_position(next_pos, SNLType::Others(name)));
@@ -207,7 +207,7 @@ impl Parser {
         let mut need_comma = false;
         loop {
             match self.inner.current() {
-                TokenType::Identifer => {
+                TokenType::Identifier => {
                     if need_comma {
                         break;
                     } else {
@@ -256,7 +256,7 @@ impl Parser {
             TokenType::Read => Some(self.parse_input_statement()?),
             TokenType::Write => Some(self.parse_output_statement()?),
             TokenType::Return => Some(self.parse_return_statement()?),
-            TokenType::Identifer => {
+            TokenType::Identifier => {
                 match self.inner.look_after() {
                     Some(TokenType::BracketOpen) => Some(self.parse_call_statement()?),
                     Some(_) => Some(self.parse_assign_statement()?),
@@ -294,7 +294,7 @@ impl Parser {
     fn parse_input_statement(&self) -> Result<Statement, String> {
         self.inner.take(TokenType::Read)?;
         self.inner.take(TokenType::BracketOpen)?;
-        let name = self.inner.take(TokenType::Identifer)?;
+        let name = self.inner.take(TokenType::Identifier)?;
         self.inner.take(TokenType::BracketClose)?;
         Ok(Statement::Input(Positional::from_token(name, name.image.clone())))
     }
@@ -317,7 +317,7 @@ impl Parser {
 
     fn parse_call_statement(&self) -> Result<Statement, String> {
         let mut params = Vec::new();
-        let name = self.inner.take(TokenType::Identifer)?;
+        let name = self.inner.take(TokenType::Identifier)?;
         self.inner.take(TokenType::BracketOpen)?;
         loop {
             if TokenType::BracketClose == self.inner.current() {
@@ -337,7 +337,7 @@ impl Parser {
     }
 
     fn parse_assign_statement(&self) -> Result<Statement, String> {
-        let base = self.inner.take(TokenType::Identifer)?;
+        let base = self.inner.take(TokenType::Identifier)?;
         let visit = self.parse_variable_visit()?;
         self.inner.take(TokenType::Assign)?;
         let value = self.parse_expression()?;
@@ -421,8 +421,8 @@ impl Parser {
                 let num = self.inner.take(TokenType::Int)?.image.as_str();
                 ExpressionFactor::Constant(u32::from_str(num).unwrap())
             }
-            TokenType::Identifer => {
-                let base = self.inner.take(TokenType::Identifer)?;
+            TokenType::Identifier => {
+                let base = self.inner.take(TokenType::Identifier)?;
                 let visit = self.parse_variable_visit()?;
                 ExpressionFactor::Variable(VariableRepresent {
                     base: Positional::from_token_image(base),
@@ -469,7 +469,7 @@ impl Parser {
     fn parse_variable_visit(&self) -> Result<Option<VariableVisit>, String> {
         let dot = if TokenType::Dot == self.inner.current() {
             self.inner.take(TokenType::Dot)?;
-            Some(self.inner.take(TokenType::Identifer)?)
+            Some(self.inner.take(TokenType::Identifier)?)
         } else {
             None
         };

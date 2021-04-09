@@ -85,7 +85,7 @@ pub fn read_tokens(input: &str) -> Result<Vec<Token>, String> {
                 } else {
                     column -= ch.len_utf8() as u32;
                     tokens.push(Token {
-                        token_type: TokenType::from_str(&image).unwrap_or(TokenType::Identifer),
+                        token_type: TokenType::from_str(&image).unwrap_or(TokenType::Identifier),
                         image,
                         line: start_line,
                         column: start_column,

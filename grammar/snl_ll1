@@ -29,7 +29,7 @@ FieldDecListMore     -> ''
 FieldDecType         -> BaseType
 FieldDecType         -> ArrayType
 IdentifierList       -> IDENTIFIER IdentifierListMore
-IdentifierListMore   -> COMMA IDENTIFIER IdentifierListMore
+IdentifierListMore   -> COMMA IdentifierList
 IdentifierListMore   -> ''
 
 VarDec               -> VarDeclaration

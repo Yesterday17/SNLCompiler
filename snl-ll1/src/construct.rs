@@ -26,6 +26,9 @@ pub enum ASTNodeValue {
     IdentifierList(PositionalVec<String>),
     ProcedureDeclaration(PositionalVec<ProcedureDeclare>),
 
+    Param(Param),
+    ParamList(Vec<Param>),
+
     Statement(Statement),
     StatementList(StatementList),
 
@@ -293,19 +296,14 @@ fn construct_field_dec_list_more(mut input: Vec<ASTNodeValue>) -> Result<ASTNode
 }
 
 fn construct_field_dec_type(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    construct_type_name(input)
 }
 
 fn construct_identifier_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    let mut result: PositionalVec<String> = vec![identifier!(input)];
-    match pop!(input) {
-        ASTNodeValue::IdentifierList(mut list) => {
-            result.append(&mut list);
-        }
-        ASTNodeValue::None => {}
-        _ => unreachable!()
-    }
-    Ok(ASTNodeValue::IdentifierList(result))
+    let id = identifier!(input);
+    let mut list = node_default!(input, IdentifierList);
+    list.insert(0, id);
+    Ok(ASTNodeValue::IdentifierList(list))
 }
 
 fn construct_identifier_list_more(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
@@ -313,10 +311,7 @@ fn construct_identifier_list_more(mut input: Vec<ASTNodeValue>) -> Result<ASTNod
         ASTNodeValue::None
     } else {
         pop!(input);
-        let id = identifier!(input);
-        let mut list = node_default!(input, IdentifierList);
-        list.insert(0, id);
-        ASTNodeValue::IdentifierList(list)
+        pop!(input)
     })
 }
 
@@ -359,23 +354,50 @@ fn construct_proc_name(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, Str
 }
 
 fn construct_param_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    Ok(if input.is_empty() {
+        ASTNodeValue::None
+    } else {
+        let param = node!(input, Param);
+        let mut list = node_default!(input, ParamList);
+        list.insert(0, param);
+        ASTNodeValue::ParamList(list)
+    })
 }
 
 fn construct_param_list_more(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    Ok(if input.is_empty() {
+        ASTNodeValue::None
+    } else {
+        pop!(input);
+        let param = node!(input, Param);
+        let mut list = node_default!(input, ParamList);
+        list.insert(0, param);
+        ASTNodeValue::ParamList(list)
+    })
 }
 
 fn construct_param(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    let is_var = input.len() == 3;
+    if is_var {
+        pop!(input);
+    }
+    let type_name = node!(input, TypeName);
+    let identifiers = node!(input, IdentifierList);
+    Ok(ASTNodeValue::Param(Param {
+        is_var,
+        definition: TypedIdentifiers {
+            type_name,
+            identifiers,
+        },
+    }))
 }
 
 fn construct_proc_dec_part(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    Ok(pop!(input))
 }
 
 fn construct_proc_body(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {
-    unimplemented!()
+    Ok(pop!(input))
 }
 
 fn construct_program_body(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, String> {

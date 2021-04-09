@@ -15,7 +15,7 @@ impl Display for Token {
         write!(f, "{}\t", self.line)?;
         write!(f, "{:?}", self.token_type)?;
         match self.token_type {
-            TokenType::Identifer | TokenType::Int => {
+            TokenType::Identifier | TokenType::Int => {
                 write!(f, "\t{}", self.image)?;
             }
             _ => {}
@@ -33,7 +33,7 @@ impl Token {
 #[repr(u8)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum TokenType {
-    Identifer,
+    Identifier,
     Int,
 
     Program,
