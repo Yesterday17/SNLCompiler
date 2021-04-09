@@ -3,6 +3,7 @@ use snl_rdp::Program;
 use snl_utils::ast::*;
 use crate::error::Error;
 use std::cell::RefCell;
+use std::collections::HashSet;
 
 mod error;
 pub mod symbol;
@@ -133,7 +134,6 @@ impl Semantic {
                     // add to param list
                     params.push(param_type.clone())
                 }
-                // TODO param.inner
             }
 
             // check declare
@@ -280,8 +280,25 @@ impl Semantic {
                     ));
                 }
             }
-            SNLType::Record(rec) => {
-                // TODO
+            SNLType::Record(records) => {
+                for rec in records {
+                    // analyze type
+                    let ty = Positional::from_position(rec.type_name.position(), rec.type_name.inner());
+                    self.analyze_type(&ty);
+
+                    // fields duplication check
+                    let mut fields: HashSet<String> = HashSet::new();
+                    for id in &rec.identifiers {
+                        if fields.contains(id.inner()) {
+                            self.errors.borrow_mut().push(Positional::from_position(
+                                id.position(),
+                                Error::DuplicatedIdentifier(id.inner().clone()),
+                            ));
+                        } else {
+                            fields.insert(id.inner().clone());
+                        }
+                    }
+                }
             }
             SNLType::Others(id) => {
                 if !self.symbols.borrow().has_own_property(id) {

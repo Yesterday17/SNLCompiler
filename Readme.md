@@ -30,7 +30,7 @@ SNL Compiler frontend implemented in rust and c(with ffi).
         - [x] Invalid assignee
         - [x] Call parameter type mismatch
         - [x] Call parameter count mismatch
-        - [ ] Invalid bool expression
+        - [x] Invalid bool expression
         - [x] Invalid read type
         - [x] Invalid write type
 - [x] snl-utils: Some common parts

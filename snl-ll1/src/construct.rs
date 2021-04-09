@@ -315,7 +315,7 @@ fn construct_var_dec_list(mut input: Vec<ASTNodeValue>) -> Result<ASTNodeValue, 
     pop!(input);
     let mut more = node_default!(input, VarDeclaration);
     more.insert(0, Positional::from_position(type_name.position(), TypedIdentifiers {
-        type_name: type_name.into_inner(),
+        type_name,
         identifiers,
     }));
     Ok(ASTNodeValue::VarDeclaration(more))

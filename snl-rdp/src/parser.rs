@@ -90,7 +90,7 @@ impl Parser {
             result.push(Positional::from_position(
                 type_name.position(),
                 TypedIdentifiers {
-                    type_name: type_name.into_inner(),
+                    type_name,
                     identifiers: ids,
                 },
             ));
@@ -191,7 +191,7 @@ impl Parser {
             let type_name = self.parse_type_name(false)?;
             let identifiers = self.parse_identifier_list()?;
             self.inner.take(TokenType::Semicolon)?;
-            records.push(TypedIdentifiers { type_name: type_name.into_inner(), identifiers });
+            records.push(TypedIdentifiers { type_name: type_name, identifiers });
 
             match self.inner.current() {
                 TokenType::Integer | TokenType::Char | TokenType::Array => {}
@@ -460,7 +460,7 @@ impl Parser {
         Ok(Positional::from_position(type_name.position(), Param {
             is_var,
             definition: TypedIdentifiers {
-                type_name: type_name.into_inner(),
+                type_name,
                 identifiers,
             },
         }))

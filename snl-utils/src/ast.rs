@@ -291,7 +291,7 @@ pub type SNLTypeRecord = Vec<TypedIdentifiers>;
 
 #[derive(Debug, Serialize)]
 pub struct TypedIdentifiers {
-    pub type_name: SNLType,
+    pub type_name: Positional<SNLType>,
     pub identifiers: PositionalVec<String>,
 }
 
