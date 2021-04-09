@@ -32,9 +32,9 @@ pub fn read_tokens(input: &str) -> Result<Vec<Token>, String> {
         }
 
         let ch = chars[i];
-        if ch == '\n' && state == LexerState::Start {
+        if ch == '\n' && (state == LexerState::Start || state == LexerState::Comment) {
             line += 1;
-            column = 1;
+            column = 0;
         } else {
             column += ch.len_utf8() as u32;
         }
@@ -83,9 +83,10 @@ pub fn read_tokens(input: &str) -> Result<Vec<Token>, String> {
                     i += 1;
                     image.push(ch);
                 } else {
+                    column -= ch.len_utf8() as u32;
                     tokens.push(Token {
                         token_type: TokenType::from_str(&image).unwrap_or(TokenType::Identifer),
-                        image: image,
+                        image,
                         line: start_line,
                         column: start_column,
                     });
@@ -98,9 +99,10 @@ pub fn read_tokens(input: &str) -> Result<Vec<Token>, String> {
                     i += 1;
                     image.push(ch);
                 } else {
+                    column -= ch.len_utf8() as u32;
                     tokens.push(Token {
                         token_type: TokenType::Int,
-                        image: image,
+                        image,
                         line: start_line,
                         column: start_column,
                     });
@@ -128,6 +130,8 @@ pub fn read_tokens(input: &str) -> Result<Vec<Token>, String> {
                 if ch == '.' {
                     i += 1;
                     image.push(ch);
+                } else {
+                    column -= ch.len_utf8() as u32;
                 }
                 tokens.push(Token {
                     token_type: TokenType::from_str(&image)?,
