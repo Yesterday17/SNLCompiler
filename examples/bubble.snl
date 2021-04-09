@@ -4,7 +4,7 @@ var integer                  i, j, num;
 
 procedure q(integer num);
 var integer i, j, k;
-    integer t;
+    integer t, temp;
 begin
     i := 1;
     while i < num do

@@ -34,9 +34,15 @@ SNL Compiler frontend implemented in rust and c(with ffi).
         - [x] Invalid read type
         - [x] Invalid write type
 - [x] snl-utils: Some common parts
-- [ ] snlc: Simple representation program, uses all the librarys above
+- [x] snlc: Simple representation program, uses all the librarys above
 
-## Credits
+## Grammar information
 
-- http://jsmachines.sourceforge.net/machines/ll1.html
-- https://vanya.jp.net/vtree/
+- `BNF`: https://github.com/Yesterday17/SNLCompiler/blob/master/grammar/snl.bnf
+- `BNF(LL(1))`: https://github.com/Yesterday17/SNLCompiler/blob/master/grammar/snl_ll1.bnf
+- `Format used to generate predict table`: https://github.com/Yesterday17/SNLCompiler/blob/6587ea8046c9727f1895a408f513d3072e5f46d0/grammar/snl_ll1
+
+## Tools used
+
+- `Predict table generation`: http://jsmachines.sourceforge.net/machines/ll1.html
+- `AST(JSON) to SVG`: https://vanya.jp.net/vtree/

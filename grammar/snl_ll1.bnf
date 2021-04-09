@@ -1,0 +1,75 @@
+Program              ::= ProgramHead DeclarePart ProgramBody;
+
+ProgramHead          ::= PROGRAM ProgramName;
+ProgramName          ::= IDENTIFIER;
+
+DeclarePart          ::= TypeDec VarDec ProcDec;
+
+TypeDec              ::= TypeDeclaration |;
+TypeDeclaration      ::= TYPE TypeDecList;
+TypeDecList          ::= TypeId EQ TypeName SEMICOLON TypeDecListMore;
+TypeDecListMore      ::= TypeDecList |;
+TypeId               ::= IDENTIFIER;
+TypeName             ::= BaseType | StructureType | IDENTIFIER;
+BaseType             ::= INTEGER | CHAR;
+StructureType        ::= ArrayType | RecordType;
+ArrayType            ::= ARRAY SQBR_OPEN Low DOT2 Top SQBR_CLOSE OF BaseType;
+Low                  ::= INTC;
+Top                  ::= INTC;
+RecordType           ::= RECORD FieldDecList END;
+FieldDecList         ::= FieldDecType IdentifierList SEMICOLON FieldDecListMore;
+FieldDecListMore     ::= FieldDecList |;
+FieldDecType         ::= BaseType | ArrayType;
+IdentifierList       ::= IDENTIFIER IdentifierListMore;
+IdentifierListMore   ::= COMMA IdentifierList |;
+
+VarDec               ::= VarDeclaration |;
+VarDeclaration       ::= VAR VarDecList;
+VarDecList           ::= TypeName IdentifierList SEMICOLON VarDecListMore;
+VarDecListMore       ::= VarDecList |;
+
+ProcDec              ::= ProcDeclaration
+ProcDeclaration      ::= PROCEDURE ProcName BR_OPEN ParamList BR_CLOSE SEMICOLON ProcDecPart ProcBody ProcDeclaration |;
+ProcName             ::= IDENTIFIER;
+ParamList            ::= Param ParamListMore |;
+ParamListMore        ::= SEMICOLON Param ParamListMore |;
+Param                ::= VAR TypeName IdentifierList | TypeName IdentifierList;
+ProcDecPart          ::= DeclarePart;
+ProcBody             ::= ProgramBody;
+
+ProgramBody          ::= BEGIN StatementList END;
+StatementList        ::= Statement MoreStatement;
+MoreStatement        ::= SEMICOLON Statement MoreStatement |;
+Statement            ::= ConditionalStatement
+                       | LoopStatement
+                       | InputStatement
+                       | OutputStatement
+                       | ReturnStatement
+                       | IDENTIFIER AssCall;
+AssCall              ::= AssignmentRest | CallStatementRest;
+AssignmentRest       ::= VariableVisit ASSIGN Exp;
+ConditionalStatement ::= IF RelExp THEN StatementList ELSE StatementList FI;
+LoopStatement        ::= WHILE RelExp DO StatementList ENDWH;
+InputStatement       ::= READ BR_OPEN IDENTIFIER BR_CLOSE;
+OutputStatement      ::= WRITE BR_OPEN Exp BR_CLOSE;
+ReturnStatement      ::= RETURN BR_OPEN Exp BR_CLOSE;
+CallStatementRest    ::= BR_OPEN CallStatementRestExp BR_CLOSE
+                       | Exp CommaExp
+                       |;
+CallStatementRestExp ::= Exp CommaExp |;
+CommaExp             ::= COMMA Exp CommaExp |;
+RelExp               ::= Exp CmdOp Exp;
+Exp                  ::= Term ExpPostFix;
+ExpPostFix           ::= AddOp Exp |;
+Term                 ::= Factor TermPostFix
+TermPostFix          ::= MultOp Term |;
+Factor               ::= BR_OPEN Exp BR_CLOSE
+                       | INTC
+                       | Variable;
+Variable             ::= IDENTIFIER VariableVisit;
+VariableVisit        ::= VariableVisitField VariableVisitIndex;
+VariableVisitField   ::= DOT IDENTIFIER |;
+VariableVisitIndex   ::= SQBR_OPEN Exp SQBR_CLOSE |;
+CmdOp                ::= LT | EQ;
+AddOp                ::= ADD | MINUS;
+MultOp               ::= MUL | DIV;

@@ -57,7 +57,7 @@ fn main() {
         "c" => {
             unimplemented!()
         }
-        &_ => unreachable!(),
+        _ => unreachable!(),
     };
     if mode == "lex" {
         for token in tokens {
@@ -85,7 +85,11 @@ fn main() {
 
     assert_eq!(mode, "semantic");
     let errors = Semantic::new(ast).analyze();
-    for error in errors {
-        println!("At line {}, column {}:\t{}", error.line, error.column, error.inner());
+    if errors.is_empty() {
+        println!("No semantic error!");
+    } else {
+        for error in errors {
+            println!("At line {}, column {}:\t{}", error.line, error.column, error.inner());
+        }
     }
 }
